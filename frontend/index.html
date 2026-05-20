@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI CharacherHub</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── RESET & TOKENS ───────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #0f1117;
+  --bg2:      #171b26;
+  --bg3:      #1e2333;
+  --border:   #2a2f45;
+  --text:     #e2e6f0;
+  --muted:    #6b7599;
+  --accent:   #7c6ff7;
+  --accent2:  #9d95ff;
+  --green:    #3ecf8e;
+  --red:      #f87171;
+  --amber:    #fbbf24;
+  --blue:     #60a5fa;
+  --radius:   8px;
+  --font:     'DM Sans', system-ui, sans-serif;
+  --mono:     'DM Mono', 'Fira Code', monospace;
+}
+html{font-size:14px;font-family:var(--font);background:var(--bg);color:var(--text)}
+body{min-height:100vh;display:flex;flex-direction:column}
+
+/* ─── SCROLLBAR ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ─── LAYOUT ────────────────────────────────────────────────────────── */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column}
+#main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────────────── */
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-size:15px;font-weight:600;color:var(--accent2);letter-spacing:-0.3px}
+.sidebar-logo p{font-size:11px;color:var(--muted);margin-top:2px}
+.sidebar-section{padding:12px 8px 4px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.sidebar-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:var(--radius);font-size:13px;text-align:left;transition:all .15s}
+.sidebar-btn:hover{background:var(--bg3);color:var(--text)}
+.sidebar-btn.active{background:rgba(124,111,247,.15);color:var(--accent2)}
+.sidebar-btn .icon{width:16px;text-align:center;flex-shrink:0}
+.sidebar-projects{flex:1;overflow-y:auto;padding:8px}
+.proj-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:12px;transition:all .15s}
+.proj-item:hover{background:var(--bg3);color:var(--text)}
+.proj-item.active{background:rgba(124,111,247,.12);color:var(--accent2)}
+.proj-item .k-badge{font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 6px;border-radius:4px}
+
+/* ─── TOPBAR ─────────────────────────────────────────────────────────── */
+#topbar{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
+#topbar h2{font-size:15px;font-weight:500;flex:1}
+.tabs{display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:3px}
+.tab{padding:5px 14px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:6px;font-size:12px;font-family:var(--font);transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--accent);color:#fff;font-weight:500}
+
+/* ─── CONTENT ────────────────────────────────────────────────────────── */
+#content{flex:1;overflow-y:auto;padding:24px}
+.panel{display:none}.panel.active{display:block}
+
+/* ─── CARDS ──────────────────────────────────────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card h3{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-val{font-size:28px;font-weight:600;font-family:var(--mono);color:var(--text);line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px}
+.k-score{font-size:32px;font-weight:700;font-family:var(--mono)}
+
+/* ─── FORMS ──────────────────────────────────────────────────────────── */
+.form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:5px}
+label{font-size:11px;color:var(--muted);font-weight:500}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{background:var(--bg2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent)}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)}.btn-danger:hover{background:rgba(248,113,113,.25)}
+.btn-success{background:rgba(62,207,142,.15);color:var(--green);border:1px solid rgba(62,207,142,.3)}.btn-success:hover{background:rgba(62,207,142,.25)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ─── TABLES ─────────────────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--bg3);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:9px 12px;border-bottom:1px solid rgba(42,47,69,.5);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ─── BADGES ─────────────────────────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-green{background:rgba(62,207,142,.15);color:var(--green)}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--blue)}
+.badge-amber{background:rgba(251,191,36,.15);color:var(--amber)}
+.badge-red{background:rgba(248,113,113,.15);color:var(--red)}
+.badge-purple{background:rgba(124,111,247,.15);color:var(--accent2)}
+
+/* ─── PROGRESS ───────────────────────────────────────────────────────── */
+.progress{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* ─── RANK ────────────────────────────────────────────────────────────── */
+.rank-1{color:gold;font-weight:700}
+.rank-2{color:silver}
+.rank-3{color:#cd7f32}
+
+/* ─── SCORE INPUT ────────────────────────────────────────────────────── */
+.score-table td input[type=number]{width:60px;padding:4px 6px;text-align:center}
+.score-cell-filled{background:rgba(62,207,142,.05)}
+
+/* ─── TOAST ──────────────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;font-size:12px;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;max-width:300px}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.ok{border-color:var(--green);color:var(--green)}
+#toast.err{border-color:var(--red);color:var(--red)}
+
+/* ─── MODAL ──────────────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:95vw}
+.modal h3{font-size:15px;margin-bottom:16px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* ─── SENSITIVITY ─────────────────────────────────────────────────────── */
+.sens-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(42,47,69,.5)}
+.sens-bar-wrap{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.sens-bar{height:100%;border-radius:4px;transition:width .4s}
+.sens-changed{color:var(--amber);font-size:11px;font-weight:600}
+
+/* ─── EMPTY STATE ────────────────────────────────────────────────────── */
+.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+.empty p{margin-top:8px;font-size:12px}
+
+/* ─── LOADER ─────────────────────────────────────────────────────────── */
+.loader{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── REPORT ─────────────────────────────────────────────────────────── */
+.report-winner{display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(124,111,247,.12),rgba(62,207,142,.08));border-radius:10px;border:1px solid rgba(124,111,247,.3);margin-bottom:16px}
+.report-winner .k-score{color:var(--accent2)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────────────────── -->
+<div id="sidebar">
+  <div class="sidebar-logo">
+    <h1>⬡ AI CharacherHub</h1>
+    <p>Платформа оценки моделей</p>
+  </div>
+  <div class="sidebar-section">Проекты</div>
+  <div class="sidebar-projects" id="proj-list">
+    <div class="empty">Загрузка...</div>
+  </div>
+  <div style="padding:12px 8px;border-top:1px solid var(--border)">
+    <button class="btn btn-primary" style="width:100%" onclick="openNewProject()">+ Новый проект</button>
+  </div>
+</div>
+
+<!-- ── MAIN ─────────────────────────────────────────────────────────────────── -->
+<div id="main">
+  <div id="topbar">
+    <h2 id="proj-title">Выберите проект</h2>
+    <div class="tabs">
+      <button class="tab active" data-tab="overview">Проект</button>
+      <button class="tab" data-tab="criteria">Критерии</button>
+      <button class="tab" data-tab="scores">Оценки</button>
+      <button class="tab" data-tab="results">Расчёт K</button>
+      <button class="tab" data-tab="analytics">Аналитика</button>
+      <button class="tab" data-tab="comparison">Сравнение</button>
+    </div>
+  </div>
+  <div id="content">
+
+    <!-- ══ 1. OVERVIEW ══════════════════════════════════════════════════════ -->
+    <div class="panel active" id="panel-overview">
+      <div id="overview-empty" class="empty">
+        <div style="font-size:32px">⬡</div>
+        <p>Выберите проект из списка слева или создайте новый</p>
+      </div>
+      <div id="overview-content" style="display:none">
+        <div class="grid4" style="margin-bottom:16px">
+          <div class="card-sm"><div class="stat-val" id="ov-models">—</div><div class="stat-label">Моделей</div></div>
+          <div class="card-sm"><div class="stat-val" id="ov-criteria">—</div><div class="stat-label">Критериев</div></div>
+          <div class="card-sm"><div class="stat-val" id="ov-leader">—</div><div class="stat-label">Лидер рейтинга</div></div>
+          <div class="card-sm"><div class="stat-val" id="ov-leader-k" style="color:var(--accent2)">—</div><div class="stat-label">Показатель K</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <h3>Модели в проекте</h3>
+            <div id="ov-models-list"></div>
+            <div class="form-row" style="margin-top:12px">
+              <div class="form-group" style="flex:1"><input id="new-model-name" placeholder="Название модели" /></div>
+              <div class="form-group">
+                <select id="new-model-type">
+                  <option value="detection">Детекция</option>
+                  <option value="classification">Классификация</option>
+                  <option value="text">Текст / NLP</option>
+                  <option value="speech">Речь / ASR</option>
+                  <option value="segmentation">Сегментация</option>
+                  <option value="llm">LLM</option>
+                  <option value="custom">Другое</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="addModel()">+ Добавить</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Информация о проекте</h3>
+            <table style="width:100%">
+              <tr><td style="color:var(--muted);font-size:12px">Название</td><td id="ov-name">—</td></tr>
+              <tr><td style="color:var(--muted);font-size:12px">Создан</td><td id="ov-created">—</td></tr>
+              <tr><td style="color:var(--muted);font-size:12px">Последний расчёт</td><td id="ov-calc">—</td></tr>
+              <tr><td style="color:var(--muted);font-size:12px">Статус отчёта</td><td id="ov-status">—</td></tr>
+              <tr><td style="color:var(--muted);font-size:12px">Описание</td><td id="ov-desc" style="font-size:12px">—</td></tr>
+            </table>
+            <div style="margin-top:12px">
+              <button class="btn btn-danger btn-sm" onclick="deleteProject()" style="font-size:11px">Удалить проект</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 2. CRITERIA ══════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-criteria">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="normWeights()">⟳ Нормировать веса</button>
+          <button class="btn btn-ghost" onclick="addCriterionModal()">+ Добавить критерий</button>
+        </div>
+        <span style="color:var(--muted);font-size:12px" id="weight-sum-label"></span>
+      </div>
+      <div id="criteria-by-group"></div>
+    </div>
+
+    <!-- ══ 3. SCORES ════════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-scores">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveAllScores()">💾 Сохранить оценки</button>
+        <label class="btn btn-ghost" style="cursor:pointer">
+          📂 Импорт CSV <input type="file" accept=".csv" onchange="importCSV(this)" style="display:none">
+        </label>
+        <button class="btn btn-ghost" onclick="downloadCSVTemplate()">⬇ Шаблон CSV</button>
+        <span style="color:var(--muted);font-size:12px;padding:7px 0">Оценки: 1 (низкое) — 5 (отличное)</span>
+      </div>
+      <div class="tbl-wrap" id="scores-table-wrap">
+        <div class="empty">Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- ══ 4. RESULTS ══════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-results">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-primary" id="calc-btn" onclick="runCalculation()">▶ Запустить расчёт</button>
+        <span style="color:var(--muted);font-size:12px;padding:7px 0" id="calc-ts"></span>
+      </div>
+      <div id="results-content">
+        <div class="empty">Нажмите «Запустить расчёт» для получения результатов</div>
+      </div>
+    </div>
+
+    <!-- ══ 5. ANALYTICS ════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-analytics">
+      <div id="analytics-content">
+        <div class="empty">Сначала запустите расчёт на вкладке «Расчёт K»</div>
+      </div>
+    </div>
+
+    <!-- ══ 6. COMPARISON ══════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-comparison">
+      <div id="comparison-content">
+        <div class="empty">Сначала запустите расчёт на вкладке «Расчёт K»</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── MODALS ────────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-new-project">
+  <div class="modal">
+    <h3>Новый проект</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="form-group"><label>Название *</label><input id="np-name" placeholder="Выбор модели для службы поддержки"></div>
+      <div class="form-group"><label>Описание</label><textarea id="np-desc" rows="3" style="resize:vertical" placeholder="Контекст задачи..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-project')">Отмена</button>
+      <button class="btn btn-primary" onclick="createProject()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-criterion">
+  <div class="modal">
+    <h3>Добавить критерий</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="form-group"><label>Название *</label><input id="ac-name" placeholder="Точность ответа"></div>
+      <div class="form-group"><label>Описание</label><input id="ac-desc" placeholder="Краткое описание критерия"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1"><label>Вес (0–1)</label><input id="ac-weight" type="number" min="0" max="1" step="0.05" value="0.1"></div>
+        <div class="form-group" style="flex:1"><label>Группа</label>
+          <select id="ac-group">
+            <option value="accuracy">Точность</option>
+            <option value="robustness">Устойчивость</option>
+            <option value="context">Контекст</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-criterion')">Отмена</button>
+      <button class="btn btn-primary" onclick="createCriterion()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+const API = '';
+let currentPid  = null;
+let currentProj = null;
+let chartInstances = {};
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: r.statusText }));
+    throw new Error(err.detail || 'API error');
+  }
+  return r.json();
+}
+const GET  = p        => api('GET',    p);
+const POST = (p, b)   => api('POST',   p, b);
+const PUT  = (p, b)   => api('PUT',    p, b);
+const DEL  = p        => api('DELETE', p);
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  setTimeout(() => el.className = '', 2600);
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+    if (currentPid) {
+      if (t.dataset.tab === 'scores')     renderScoresTable();
+      if (t.dataset.tab === 'criteria')   renderCriteria();
+      if (t.dataset.tab === 'analytics')  loadAnalytics();
+      if (t.dataset.tab === 'comparison') loadComparison();
+    }
+  });
+});
+
+// ── PROJECT LIST ─────────────────────────────────────────────────────────────
+async function loadProjects() {
+  const list = await GET('/api/projects').catch(() => []);
+  const el = document.getElementById('proj-list');
+  if (!list.length) { el.innerHTML = '<div class="empty" style="padding:16px;text-align:center;font-size:12px">Нет проектов</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="proj-item ${p.id === currentPid ? 'active' : ''}" onclick="selectProject(${p.id})">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
+      ${p.leader_k != null ? `<span class="k-badge" style="color:var(--accent2)">${p.leader_k.toFixed(2)}</span>` : ''}
+    </div>`).join('');
+}
+
+async function selectProject(pid) {
+  currentPid = pid;
+  const proj = await GET(`/api/projects/${pid}`);
+  currentProj = proj;
+  document.getElementById('proj-title').textContent = proj.name;
+  document.querySelectorAll('.proj-item').forEach(el => el.classList.toggle('active', +el.onclick.toString().match(/\d+/) === pid));
+  loadProjects();
+  renderOverview(proj);
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+  if (activeTab === 'criteria')   renderCriteria();
+  if (activeTab === 'scores')     renderScoresTable();
+  if (activeTab === 'analytics')  loadAnalytics();
+  if (activeTab === 'comparison') loadComparison();
+}
+
+// ── 1. OVERVIEW ──────────────────────────────────────────────────────────────
+function renderOverview(proj) {
+  document.getElementById('overview-empty').style.display = 'none';
+  document.getElementById('overview-content').style.display = 'block';
+  document.getElementById('ov-models').textContent   = proj.models.length;
+  document.getElementById('ov-criteria').textContent = proj.criteria.filter(c => c.enabled).length;
+  document.getElementById('ov-name').textContent     = proj.name;
+  document.getElementById('ov-created').textContent  = fmtDate(proj.created_at);
+  document.getElementById('ov-calc').textContent     = proj.last_calculated ? fmtDate(proj.last_calculated) : '—';
+  document.getElementById('ov-desc').textContent     = proj.description || '—';
+  const statusEl = document.getElementById('ov-status');
+  statusEl.innerHTML = proj.report_status === 'ready'
+    ? '<span class="badge badge-green">Готов</span>'
+    : '<span class="badge badge-amber">Ожидание расчёта</span>';
+
+  // fetch latest results for leader
+  GET(`/api/projects/${proj.id}/results`).then(d => {
+    const ranked = Object.values(d.results).sort((a,b) => a.rank - b.rank);
+    if (ranked.length) {
+      document.getElementById('ov-leader').textContent   = ranked[0].model_name;
+      document.getElementById('ov-leader-k').textContent = ranked[0].k.toFixed(4);
+    }
+  }).catch(() => {
+    document.getElementById('ov-leader').textContent   = '—';
+    document.getElementById('ov-leader-k').textContent = '—';
+  });
+
+  // Models list
+  const ml = document.getElementById('ov-models-list');
+  if (!proj.models.length) { ml.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Нет моделей</div>'; return; }
+  ml.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Название</th><th>Тип</th><th></th></tr></thead>
+    <tbody>${proj.models.map(m => `<tr>
+      <td>${esc(m.name)}</td>
+      <td><span class="badge badge-purple">${esc(m.model_type)}</span></td>
+      <td><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteModel(${m.id})">×</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+async function addModel() {
+  const name = document.getElementById('new-model-name').value.trim();
+  const type = document.getElementById('new-model-type').value;
+  if (!name) { toast('Введите название модели', 'err'); return; }
+  await POST(`/api/projects/${currentPid}/models`, { name, model_type: type, description: '' });
+  document.getElementById('new-model-name').value = '';
+  toast('Модель добавлена');
+  selectProject(currentPid);
+}
+
+async function deleteModel(mid) {
+  if (!confirm('Удалить модель и все её оценки?')) return;
+  await DEL(`/api/projects/${currentPid}/models/${mid}`);
+  toast('Удалено');
+  selectProject(currentPid);
+}
+
+async function deleteProject() {
+  if (!confirm(`Удалить проект "${currentProj?.name}"?`)) return;
+  await DEL(`/api/projects/${currentPid}`);
+  currentPid = null; currentProj = null;
+  document.getElementById('proj-title').textContent = 'Выберите проект';
+  document.getElementById('overview-empty').style.display = '';
+  document.getElementById('overview-content').style.display = 'none';
+  loadProjects();
+  toast('Проект удалён');
+}
+
+// ── 2. CRITERIA ───────────────────────────────────────────────────────────────
+async function renderCriteria() {
+  const criteria = await GET(`/api/projects/${currentPid}/criteria`);
+  const groups = { accuracy: [], robustness: [], context: [] };
+  criteria.forEach(c => { (groups[c.group_name] ||= []).push(c); });
+
+  const groupNames = { accuracy: '🎯 Точность и полнота', robustness: '🛡 Устойчивость', context: '🔗 Контекстная согласованность' };
+  const groupColors = { accuracy: 'var(--accent2)', robustness: 'var(--green)', context: 'var(--amber)' };
+
+  // Weight sum
+  const totalW = criteria.filter(c => c.enabled).reduce((s, c) => s + c.weight, 0);
+  document.getElementById('weight-sum-label').textContent = `Сумма весов: ${totalW.toFixed(4)}`;
+
+  const el = document.getElementById('criteria-by-group');
+  el.innerHTML = Object.entries(groups).map(([g, list]) => {
+    if (!list.length) return '';
+    const gW = list.filter(c=>c.enabled).reduce((s,c)=>s+c.weight,0);
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="color:${groupColors[g]};margin:0">${groupNames[g] || g}</h3>
+        <span style="font-size:12px;color:var(--muted)">Σw = <b style="color:${groupColors[g]}">${gW.toFixed(3)}</b></span>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Критерий</th><th>Описание</th><th>Вес</th><th>Вкл</th><th></th></tr></thead>
+        <tbody>${list.map(c => `<tr id="crit-row-${c.id}" class="${!c.enabled ? 'opacity:0.4' : ''}">
+          <td><b>${esc(c.name)}</b></td>
+          <td style="color:var(--muted);font-size:12px">${esc(c.description||'')}</td>
+          <td>
+            <input type="number" min="0" max="1" step="0.05" value="${c.weight}"
+              style="width:70px"
+              onchange="updateCriterion(${c.id}, {weight: parseFloat(this.value)})">
+          </td>
+          <td>
+            <input type="checkbox" ${c.enabled ? 'checked' : ''}
+              onchange="updateCriterion(${c.id}, {enabled: this.checked ? 1 : 0})">
+          </td>
+          <td>
+            <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteCriterion(${c.id})">×</button>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+}
+
+async function updateCriterion(cid, patch) {
+  await PUT(`/api/projects/${currentPid}/criteria/${cid}`, patch);
+  renderCriteria();
+}
+
+async function deleteCriterion(cid) {
+  if (!confirm('Удалить критерий и все его оценки?')) return;
+  await DEL(`/api/projects/${currentPid}/criteria/${cid}`);
+  toast('Критерий удалён');
+  renderCriteria();
+}
+
+async function normWeights() {
+  await POST(`/api/projects/${currentPid}/criteria/normalize`);
+  toast('Веса нормированы');
+  renderCriteria();
+}
+
+function addCriterionModal() { openModal('modal-add-criterion'); }
+async function createCriterion() {
+  const name   = document.getElementById('ac-name').value.trim();
+  const desc   = document.getElementById('ac-desc').value.trim();
+  const weight = parseFloat(document.getElementById('ac-weight').value);
+  const group  = document.getElementById('ac-group').value;
+  if (!name) { toast('Введите название', 'err'); return; }
+  await POST(`/api/projects/${currentPid}/criteria`, { name, description: desc, weight, group_name: group });
+  closeModal('modal-add-criterion');
+  toast('Критерий добавлен');
+  renderCriteria();
+}
+
+// ── 3. SCORES ─────────────────────────────────────────────────────────────────
+let pendingScores = {};
+
+async function renderScoresTable() {
+  pendingScores = {};
+  const [proj, scores] = await Promise.all([
+    GET(`/api/projects/${currentPid}`),
+    GET(`/api/projects/${currentPid}/scores`),
+  ]);
+  const models   = proj.models;
+  const criteria = proj.criteria.filter(c => c.enabled);
+  const wrap = document.getElementById('scores-table-wrap');
+
+  if (!models.length || !criteria.length) {
+    wrap.innerHTML = '<div class="empty">Добавьте модели и критерии</div>'; return;
+  }
+
+  const scoreMap = {};
+  scores.forEach(s => { scoreMap[`${s.model_id}_${s.criterion_id}`] = s.score; });
+
+  const groups = {};
+  criteria.forEach(c => { (groups[c.group_name] ||= []).push(c); });
+  const groupLabels = { accuracy: 'Точность', robustness: 'Устойчивость', context: 'Контекст' };
+
+  let thead = '<tr><th style="width:180px">Критерий</th>';
+  models.forEach(m => { thead += `<th style="text-align:center">${esc(m.name)}</th>`; });
+  thead += '</tr>';
+
+  let tbody = '';
+  Object.entries(groups).forEach(([g, clist]) => {
+    tbody += `<tr><td colspan="${models.length+1}" style="background:var(--bg3);font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:8px 12px">${groupLabels[g]||g}</td></tr>`;
+    clist.forEach(c => {
+      tbody += `<tr><td><div style="font-size:12px">${esc(c.name)}</div><div style="font-size:10px;color:var(--muted)">w=${c.weight}</div></td>`;
+      models.forEach(m => {
+        const key = `${m.id}_${c.id}`;
+        const val = scoreMap[key] || '';
+        tbody += `<td style="text-align:center" class="${val ? 'score-cell-filled' : ''}">
+          <input type="number" min="1" max="5" step="0.1" value="${val}"
+            placeholder="—" class="score-table score-input"
+            data-model="${m.id}" data-crit="${c.id}"
+            onchange="pendingScores['${key}']={model_id:${m.id},criterion_id:${c.id},score:parseFloat(this.value)}">
+        </td>`;
+      });
+      tbody += '</tr>';
+    });
+  });
+
+  wrap.innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+}
+
+async function saveAllScores() {
+  const inputs = document.querySelectorAll('.score-input');
+  inputs.forEach(inp => {
+    const mid  = +inp.dataset.model;
+    const cid  = +inp.dataset.crit;
+    const val  = parseFloat(inp.value);
+    if (!isNaN(val) && val >= 1 && val <= 5) {
+      pendingScores[`${mid}_${cid}`] = { model_id: mid, criterion_id: cid, score: val };
+    }
+  });
+
+  if (!Object.keys(pendingScores).length) { toast('Нет изменений', 'err'); return; }
+  let saved = 0;
+  for (const s of Object.values(pendingScores)) {
+    await POST(`/api/projects/${currentPid}/scores`, s);
+    saved++;
+  }
+  pendingScores = {};
+  toast(`Сохранено ${saved} оценок`);
+}
+
+async function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch(`${API}/api/projects/${currentPid}/scores/import`, { method: 'POST', body: fd });
+  const d = await r.json();
+  toast(`Импортировано: ${d.imported}${d.errors?.length ? ` | Ошибок: ${d.errors.length}` : ''}`);
+  if (d.errors?.length) console.warn('CSV errors:', d.errors);
+  renderScoresTable();
+  input.value = '';
+}
+
+function downloadCSVTemplate() {
+  if (!currentProj) return;
+  const rows = ['model_name,criterion_name,score'];
+  currentProj.models.forEach(m => {
+    currentProj.criteria.filter(c=>c.enabled).forEach(c => {
+      rows.push(`${m.name},${c.name},`);
+    });
+  });
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'scores_template.csv' });
+  a.click();
+}
+
+// ── 4. RESULTS ────────────────────────────────────────────────────────────────
+async function runCalculation() {
+  const btn = document.getElementById('calc-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Расчёт...';
+  try {
+    const data = await POST(`/api/projects/${currentPid}/calculate`);
+    renderResults(data, new Date().toISOString());
+    toast('Расчёт завершён');
+    loadProjects();
+  } catch(e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '▶ Запустить расчёт';
+  }
+}
+
+function kColor(k) {
+  if (k >= 0.90) return 'var(--green)';
+  if (k >= 0.75) return 'var(--accent2)';
+  if (k >= 0.60) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function renderResults(data, ts) {
+  document.getElementById('calc-ts').textContent = `Рассчитано: ${fmtDate(ts)}`;
+  const sorted = Object.values(data).sort((a,b) => a.rank - b.rank);
+
+  let html = `<div class="card" style="margin-bottom:16px">
+    <h3>Рейтинг моделей</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>#</th><th>Модель</th><th>Тип</th><th>K</th><th>S_k / S_max</th><th>Статус</th><th>Вклад по группам</th></tr></thead>
+      <tbody>${sorted.map(m => `<tr>
+        <td class="rank-${m.rank}" style="font-family:var(--mono);font-size:15px">${m.rank}</td>
+        <td><b>${esc(m.model_name)}</b></td>
+        <td><span class="badge badge-purple">${esc(m.model_type)}</span></td>
+        <td style="font-family:var(--mono);font-size:16px;font-weight:600;color:${kColor(m.k)}">${m.k.toFixed(4)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${m.s_k.toFixed(3)} / ${m.s_max.toFixed(3)}</td>
+        <td><span class="badge ${m.k>=0.9?'badge-green':m.k>=0.75?'badge-blue':m.k>=0.6?'badge-amber':'badge-red'}">${esc(m.label)}</span></td>
+        <td style="min-width:200px">${renderGroupBars(m.groups)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+
+  // Detailed breakdown per model
+  sorted.forEach(m => {
+    html += `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+        <span class="rank-${m.rank}" style="font-size:18px">№${m.rank}</span>
+        <span style="font-size:15px;font-weight:600">${esc(m.model_name)}</span>
+        <span style="font-family:var(--mono);font-size:20px;font-weight:700;color:${kColor(m.k)}">K = ${m.k.toFixed(4)}</span>
+        <span class="badge ${m.k>=0.9?'badge-green':m.k>=0.75?'badge-blue':m.k>=0.6?'badge-amber':'badge-red'}">${esc(m.label)}</span>
+      </div>
+      <div class="grid3">`;
+    const groupNames = { accuracy:'Точность', robustness:'Устойчивость', context:'Контекст' };
+    const groupColors = { accuracy:'var(--accent2)', robustness:'var(--green)', context:'var(--amber)' };
+    Object.entries(m.groups).forEach(([g, gd]) => {
+      html += `<div>
+        <div style="font-size:11px;color:${groupColors[g]||'var(--muted)'};font-weight:600;margin-bottom:6px">${groupNames[g]||g}</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:${groupColors[g]||'var(--text)'}">${gd.k.toFixed(3)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">S=${gd.s_k.toFixed(3)} / ${gd.s_max.toFixed(3)}</div>
+        <div style="margin-top:8px">${gd.criteria.map(c => `
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="color:var(--muted)">${esc(c.criterion_name)}</span>
+            <span style="font-family:var(--mono);color:${c.score?'var(--text)':'var(--red)'}">${c.score ? c.score.toFixed(1) : '—'}</span>
+          </div>
+          <div class="progress" style="margin-bottom:4px">
+            <div class="progress-fill" style="width:${c.score?c.score/5*100:0}%;background:${groupColors[g]||'var(--accent)'}"></div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  document.getElementById('results-content').innerHTML = html;
+}
+
+function renderGroupBars(groups) {
+  const c = { accuracy:'var(--accent2)', robustness:'var(--green)', context:'var(--amber)' };
+  return Object.entries(groups).map(([g, gd]) =>
+    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <span style="font-size:9px;width:24px;color:${c[g]}">${g.slice(0,3)}</span>
+      <div class="progress" style="flex:1"><div class="progress-fill" style="width:${gd.k*100}%;background:${c[g]}"></div></div>
+      <span style="font-size:10px;font-family:var(--mono);width:36px;text-align:right;color:${c[g]}">${gd.k.toFixed(2)}</span>
+    </div>`
+  ).join('');
+}
+
+// ── 5. ANALYTICS ──────────────────────────────────────────────────────────────
+async function loadAnalytics() {
+  let d;
+  try { d = await GET(`/api/projects/${currentPid}/results`); }
+  catch { document.getElementById('analytics-content').innerHTML = '<div class="empty">Сначала запустите расчёт</div>'; return; }
+
+  const results = Object.values(d.results).sort((a,b) => a.rank - b.rank);
+  const el = document.getElementById('analytics-content');
+
+  el.innerHTML = `
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card"><h3>Интегральный показатель K</h3><canvas id="chart-bar" height="220"></canvas></div>
+      <div class="card"><h3>Вклад групп критериев</h3><canvas id="chart-stacked" height="220"></canvas></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Радар по группам</h3><canvas id="chart-radar" height="260"></canvas></div>
+      <div class="card"><h3>Отчёт</h3><div id="report-content"><div class="empty">Загрузка...</div></div></div>
+    </div>`;
+
+  const labels = results.map(m => m.model_name);
+  const palette = ['#7c6ff7','#3ecf8e','#fbbf24','#60a5fa','#f87171'];
+
+  // Destroy old charts
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+
+  // Bar chart
+  chartInstances.bar = new Chart(document.getElementById('chart-bar'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'K', data: results.map(m => m.k),
+        backgroundColor: results.map((m,i) => palette[i % palette.length]),
+        borderRadius: 6, borderSkipped: false }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 1, ticks: { color: '#6b7599', font: { family: 'DM Mono', size: 11 } }, grid: { color: '#2a2f45' } },
+        x: { ticks: { color: '#6b7599' }, grid: { display: false } },
+      },
+    },
+  });
+
+  // Stacked bar
+  const gGroups = ['accuracy','robustness','context'];
+  const gColors = { accuracy:'#7c6ff7', robustness:'#3ecf8e', context:'#fbbf24' };
+  const gNames  = { accuracy:'Точность', robustness:'Устойчивость', context:'Контекст' };
+  chartInstances.stacked = new Chart(document.getElementById('chart-stacked'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: gGroups.map(g => ({
+        label: gNames[g], backgroundColor: gColors[g],
+        data: results.map(m => m.groups[g] ? parseFloat((m.groups[g].k * (g === 'accuracy' ? 0.4 : g === 'robustness' ? 0.35 : 0.25)).toFixed(4)) : 0),
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7599', boxWidth: 10, font: { size: 11 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#6b7599' }, grid: { display: false } },
+        y: { stacked: true, min: 0, max: 1, ticks: { color: '#6b7599' }, grid: { color: '#2a2f45' } },
+      },
+    },
+  });
+
+  // Radar
+  chartInstances.radar = new Chart(document.getElementById('chart-radar'), {
+    type: 'radar',
+    data: {
+      labels: ['Точность', 'Устойчивость', 'Контекст'],
+      datasets: results.map((m, i) => ({
+        label: m.model_name,
+        data: gGroups.map(g => m.groups[g]?.k || 0),
+        borderColor: palette[i % palette.length],
+        backgroundColor: palette[i % palette.length] + '22',
+        pointBackgroundColor: palette[i % palette.length],
+        borderWidth: 2,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#6b7599', boxWidth: 10, font: { size: 11 } } } },
+      scales: { r: { min: 0, max: 1,
+        ticks: { color: '#6b7599', backdropColor: 'transparent', stepSize: 0.25 },
+        grid: { color: '#2a2f45' },
+        pointLabels: { color: '#e2e6f0', font: { size: 12 } },
+      }},
+    },
+  });
+
+  // Report
+  GET(`/api/projects/${currentPid}/report`).then(rep => {
+    document.getElementById('report-content').innerHTML = `
+      <div class="report-winner">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Рекомендуется</div>
+          <div style="font-size:16px;font-weight:600">${esc(rep.winner.name)}</div>
+          <div class="badge badge-green" style="margin-top:6px">${esc(rep.winner.label)}</div>
+        </div>
+        <div class="k-score">${rep.winner.k.toFixed(4)}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px">${esc(rep.recommendation)}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">ИТОГОВЫЙ РЕЙТИНГ</div>
+      ${rep.ranking.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span class="rank-${r.rank}" style="font-family:var(--mono);min-width:20px">#${r.rank}</span>
+          <span style="flex:1;font-size:12px">${esc(r.name)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${kColor(r.k)}">${r.k.toFixed(4)}</span>
+        </div>`).join('')}`;
+  }).catch(() => {});
+}
+
+// ── 6. COMPARISON & SENSITIVITY ──────────────────────────────────────────────
+async function loadComparison() {
+  let d;
+  try { d = await GET(`/api/projects/${currentPid}/results`); }
+  catch { document.getElementById('comparison-content').innerHTML = '<div class="empty">Сначала запустите расчёт</div>'; return; }
+
+  const results  = Object.values(d.results).sort((a,b) => a.rank - b.rank);
+  const criteria = await GET(`/api/projects/${currentPid}/criteria`);
+  const el = document.getElementById('comparison-content');
+
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:16px">
+      <h3>Сравнение моделей по критериям</h3>
+      <div class="tbl-wrap" id="comp-table"></div>
+    </div>
+    <div class="card">
+      <h3>Анализ чувствительности</h3>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
+        <div class="form-group">
+          <label>Критерий</label>
+          <select id="sens-crit" style="min-width:200px">
+            ${criteria.filter(c=>c.enabled).map(c => `<option value="${c.id}">${esc(c.name)} (w=${c.weight})</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label>Δ вес</label><input id="sens-delta" type="number" min="0.01" max="0.5" step="0.05" value="0.1" style="width:80px"></div>
+        <button class="btn btn-primary" onclick="runSensitivity()">▶ Анализ</button>
+      </div>
+      <div id="sens-result"></div>
+    </div>`;
+
+  // Comparison table
+  const enabledCrit = criteria.filter(c => c.enabled);
+  let html = `<table><thead><tr><th>Критерий</th>`;
+  results.forEach(m => { html += `<th style="text-align:center">${esc(m.model_name)}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  enabledCrit.forEach(c => {
+    html += `<tr><td style="font-size:12px">${esc(c.name)}<br><span style="color:var(--muted);font-size:10px">w=${c.weight}</span></td>`;
+    const allScores = results.map(m => {
+      const gd = m.groups[c.group_name];
+      if (!gd) return null;
+      const cd = gd.criteria.find(x => x.criterion_id === c.id);
+      return cd?.score ?? null;
+    });
+    const maxScore = Math.max(...allScores.filter(s => s !== null));
+    results.forEach((m, i) => {
+      const s = allScores[i];
+      const isMax = s === maxScore && s !== null;
+      html += `<td style="text-align:center">
+        ${s !== null
+          ? `<div style="font-family:var(--mono);font-size:13px;color:${isMax?'var(--green)':'var(--text)'}${isMax?';font-weight:700':''}">${s.toFixed(1)}</div>
+             <div class="progress" style="margin-top:4px"><div class="progress-fill" style="width:${s/5*100}%;background:${isMax?'var(--green)':'var(--accent)'}"></div></div>`
+          : `<span style="color:var(--muted)">—</span>`}
+      </td>`;
+    });
+    html += '</tr>';
+  });
+  html += `<tr style="background:var(--bg3)"><td style="font-weight:600;font-size:12px;color:var(--accent2)">ИТОГО K</td>`;
+  results.forEach(m => {
+    html += `<td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${kColor(m.k)}">${m.k.toFixed(4)}</td>`;
+  });
+  html += '</tr></tbody></table>';
+  document.getElementById('comp-table').innerHTML = html;
+}
+
+async function runSensitivity() {
+  const cid   = +document.getElementById('sens-crit').value;
+  const delta = +document.getElementById('sens-delta').value;
+  const el = document.getElementById('sens-result');
+  el.innerHTML = '<span class="loader"></span>';
+
+  try {
+    const r = await POST(`/api/projects/${currentPid}/sensitivity`, { criterion_id: cid, delta });
+    const models = Object.values(r.models).sort((a,b) => b.baseline_k - a.baseline_k);
+    const palette = ['#7c6ff7','#3ecf8e','#fbbf24','#60a5fa','#f87171'];
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px;background:var(--bg3);border-radius:var(--radius)">
+        <div>
+          <div style="font-size:12px;color:var(--muted)">При Δw = +${delta}</div>
+          <div style="font-size:13px;margin-top:2px">
+            ${r.leader_changed
+              ? `<span style="color:var(--amber)">⚠ Лидер сменился:</span> ${esc(r.baseline_leader)} → <b>${esc(r.new_leader)}</b>`
+              : `<span style="color:var(--green)">✓ Лидер стабилен:</span> <b>${esc(r.baseline_leader)}</b>`}
+          </div>
+        </div>
+      </div>
+      ${models.map((m, i) => {
+        const maxDelta = Math.max(...models.map(x => Math.abs(x.delta)));
+        const barW = maxDelta > 0 ? Math.abs(m.delta) / maxDelta * 100 : 0;
+        return `<div class="sens-row">
+          <div style="width:140px;font-size:12px">${esc(m.model_name)}</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--muted);width:55px">${m.baseline_k.toFixed(4)}</div>
+          <div class="sens-bar-wrap">
+            <div class="sens-bar" style="width:${barW}%;background:${m.delta > 0 ? 'var(--green)' : 'var(--red)'}"></div>
+          </div>
+          <div style="font-family:var(--mono);font-size:12px;width:55px;text-align:right;color:var(--muted)">${m.new_k.toFixed(4)}</div>
+          <div style="font-family:var(--mono);font-size:11px;width:55px;text-align:right;color:${m.delta > 0 ? 'var(--green)' : 'var(--red)'}">
+            ${m.delta > 0 ? '+' : ''}${m.delta.toFixed(4)}
+          </div>
+        </div>`;
+      }).join('')}`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+function openNewProject() { openModal('modal-new-project'); }
+async function createProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const desc = document.getElementById('np-desc').value.trim();
+  if (!name) { toast('Введите название', 'err'); return; }
+  const proj = await POST('/api/projects', { name, description: desc });
+  closeModal('modal-new-project');
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-desc').value = '';
+  toast('Проект создан');
+  await loadProjects();
+  selectProject(proj.id);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s.endsWith('Z') ? s : s + 'Z').toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadProjects();
+</script>
+</body>
+</html>
