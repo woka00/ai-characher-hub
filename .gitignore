@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Local app data
+backend/ai_eval.db
+backend/*.db
+
+# Downloaded model weights and caches
+backend/models/detection/*.pt
+backend/models/detection/*.onnx
+backend/models/detection/*.engine
+backend/models/nlp/*
+!backend/models/nlp/README.txt
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -2,991 +2,1448 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI CharacherHub</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI CharacherHub — Платформа оценки моделей</title>
+
+<!-- Шрифты: IBM Plex Sans для интерфейса, IBM Plex Mono для чисел и кода -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Chart.js для bar/radar/stacked-графиков на вкладке Аналитика -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <style>
-/* ─── RESET & TOKENS ───────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════
+   СТИЛИ — единая тёмная тема, переменные CSS для лёгкой смены палитры
+   ═══════════════════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* Дизайн-токены: цвета фона, текста, акцентов, отступы */
 :root{
-  --bg:       #0f1117;
-  --bg2:      #171b26;
-  --bg3:      #1e2333;
-  --border:   #2a2f45;
-  --text:     #e2e6f0;
-  --muted:    #6b7599;
-  --accent:   #7c6ff7;
-  --accent2:  #9d95ff;
-  --green:    #3ecf8e;
-  --red:      #f87171;
-  --amber:    #fbbf24;
-  --blue:     #60a5fa;
-  --radius:   8px;
-  --font:     'DM Sans', system-ui, sans-serif;
-  --mono:     'DM Mono', 'Fira Code', monospace;
+  --bg:#0e0d0d;--bg2:#1f1a12;--bg3:#282118;--bg4:#352b1e;
+  --border:#3d3225;--border2:#985820;
+  --text:#f0ece9;--muted:#7d7368;--muted2:#aaa099;
+  --accent:#ffa963;--accent-h:#ffb485;--accent-glow:rgba(255, 185, 99, 0.18);
+  --green:#2dd4a0;--green-bg:rgba(45,212,160,.1); --green-mint:#7ef58c; 
+  --amber:#f5a623;--amber-bg:rgba(245,166,35,.1); --golden: #ffc53d;
+  --red:#f06060;--red-bg:rgba(240,96,96,.1);
+  --blue:#5ba3f5;--blue-bg:rgba(91,163,245,.1);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,.1);
+  --gray:#a0a0a0;
+  --bright-orange:#ff7b00;
+  --r:6px;--r2:10px;--r3:14px;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
 }
-html{font-size:14px;font-family:var(--font);background:var(--bg);color:var(--text)}
+html{font-family:var(--sans);font-size:14px;background:var(--bg);color:var(--text);line-height:1.5}
 body{min-height:100vh;display:flex;flex-direction:column}
 
-/* ─── SCROLLBAR ─────────────────────────────────────────────────────── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* Тонкие минималистичные скроллбары */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-/* ─── LAYOUT ────────────────────────────────────────────────────────── */
+/* ── СЕТКА: сайдбар + основная область ── */
 #app{display:flex;height:100vh;overflow:hidden}
-#sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column}
-#main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
-/* ─── SIDEBAR ────────────────────────────────────────────────────────── */
-.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid var(--border)}
-.sidebar-logo h1{font-size:15px;font-weight:600;color:var(--accent2);letter-spacing:-0.3px}
-.sidebar-logo p{font-size:11px;color:var(--muted);margin-top:2px}
-.sidebar-section{padding:12px 8px 4px;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
-.sidebar-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 12px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:var(--radius);font-size:13px;text-align:left;transition:all .15s}
-.sidebar-btn:hover{background:var(--bg3);color:var(--text)}
-.sidebar-btn.active{background:rgba(124,111,247,.15);color:var(--accent2)}
-.sidebar-btn .icon{width:16px;text-align:center;flex-shrink:0}
-.sidebar-projects{flex:1;overflow-y:auto;padding:8px}
-.proj-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:12px;transition:all .15s}
-.proj-item:hover{background:var(--bg3);color:var(--text)}
-.proj-item.active{background:rgba(124,111,247,.12);color:var(--accent2)}
-.proj-item .k-badge{font-family:var(--mono);font-size:11px;background:var(--bg);padding:1px 6px;border-radius:4px}
+/* ── САЙДБАР ── */
+.s-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .12s}
+.s-logo:hover{background:var(--bg3)}
+.s-logo-icon{width:28px;height:28px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.s-logo h1{font-size:13px;font-weight:600;color:var(--accent-h);letter-spacing:-.2px}
+.s-logo p{font-size:10px;color:var(--muted);margin-top:1px}
+.s-section{padding:12px 14px 4px;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.s-projects{flex:1;overflow-y:auto;padding:4px 8px 8px}
 
-/* ─── TOPBAR ─────────────────────────────────────────────────────────── */
-#topbar{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
-#topbar h2{font-size:15px;font-weight:500;flex:1}
-.tabs{display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:3px}
-.tab{padding:5px 14px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:6px;font-size:12px;font-family:var(--font);transition:all .15s;white-space:nowrap}
+/* Кнопка перехода на главную */
+.s-home-btn{margin:6px 8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--muted2);cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:8px;font-family:var(--sans);transition:all .12s;width:calc(100% - 16px)}
+.s-home-btn:hover{border-color:var(--accent);color:var(--accent-h)}
+.s-home-btn.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent-h)}
+
+/* Элемент списка проектов */
+.proj-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--r);cursor:pointer;color:var(--muted2);font-size:12px;transition:all .12s;gap:8px;border:1px solid transparent}
+.proj-item:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
+.proj-item.active{background:var(--accent-glow);color:var(--accent-h);border-color:rgba(108,99,255,.35)}
+.proj-item .pname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-k{font-family:var(--mono);font-size:10px;background:var(--bg);padding:1px 5px;border-radius:4px;flex-shrink:0;color:var(--accent-h)}
+.s-footer{padding:12px 8px;border-top:1px solid var(--border)}
+
+/* ── ТОПБАР с вкладками ── */
+#topbar{height:46px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;background:var(--bg2)}
+#proj-title{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted2)}
+#proj-title span{color:var(--text)}
+.tabs{display:flex;gap:1px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:2px;flex-wrap:wrap}
+.tab{padding:4px 12px;border:none;background:none;color:var(--muted);cursor:pointer;border-radius:5px;font-size:11px;font-family:var(--sans);font-weight:500;transition:all .12s;white-space:nowrap;letter-spacing:.1px}
 .tab:hover{color:var(--text)}
-.tab.active{background:var(--accent);color:#fff;font-weight:500}
+.tab.active{background:var(--accent);color:#fff}
 
-/* ─── CONTENT ────────────────────────────────────────────────────────── */
-#content{flex:1;overflow-y:auto;padding:24px}
+/* ── ОСНОВНОЙ КОНТЕНТ ── */
+#content{flex:1;overflow-y:auto;padding:20px}
 .panel{display:none}.panel.active{display:block}
 
-/* ─── CARDS ──────────────────────────────────────────────────────────── */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px}
-.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
-.card h3{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.stat-val{font-size:28px;font-weight:600;font-family:var(--mono);color:var(--text);line-height:1}
-.stat-label{font-size:11px;color:var(--muted);margin-top:4px}
-.k-score{font-size:32px;font-weight:700;font-family:var(--mono)}
+/* ── КАРТОЧКИ ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:18px}
+.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px}
+.card h3{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 
-/* ─── FORMS ──────────────────────────────────────────────────────────── */
-.form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
-.form-group{display:flex;flex-direction:column;gap:5px}
-label{font-size:11px;color:var(--muted);font-weight:500}
-input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-family:var(--font);font-size:13px;outline:none;transition:border .15s}
+/* Статистика — крупные цифры */
+.stat-val{font-size:26px;font-weight:600;font-family:var(--mono);color:var(--text);line-height:1.1}
+.stat-label{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:.2px}
+
+/* ── ФОРМЫ ── */
+.fg{display:flex;flex-direction:column;gap:4px}
+label{font-size:10px;font-weight:600;letter-spacing:.3px;color:var(--muted);text-transform:uppercase}
+input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:6px 10px;font-family:var(--sans);font-size:12px;outline:none;transition:border .12s;width:100%}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 select option{background:var(--bg2)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:none;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap}
-.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
-.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent)}
-.btn-danger{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)}.btn-danger:hover{background:rgba(248,113,113,.25)}
-.btn-success{background:rgba(62,207,142,.15);color:var(--green);border:1px solid rgba(62,207,142,.3)}.btn-success:hover{background:rgba(62,207,142,.25)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
+.fr{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 
-/* ─── TABLES ─────────────────────────────────────────────────────────── */
-.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+/* ── КНОПКИ ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);border:none;cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:600;transition:all .12s;white-space:nowrap;letter-spacing:.2px}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent-h)}
+.btn-ghost{background:var(--bg3);color:var(--muted2);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(240,96,96,.2)}.btn-danger:hover{background:rgba(240,96,96,.18)}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,212,160,.2)}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* ── ТАБЛИЦЫ ── */
+.tw{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse}
-th{background:var(--bg3);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-td{padding:9px 12px;border-bottom:1px solid rgba(42,47,69,.5);font-size:13px;vertical-align:middle}
+th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid rgba(37,42,61,.7);font-size:12px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,.02)}
+tr:hover td{background:rgba(255,255,255,.015)}
 
-/* ─── BADGES ─────────────────────────────────────────────────────────── */
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
-.badge-green{background:rgba(62,207,142,.15);color:var(--green)}
-.badge-blue{background:rgba(96,165,250,.15);color:var(--blue)}
-.badge-amber{background:rgba(251,191,36,.15);color:var(--amber)}
-.badge-red{background:rgba(248,113,113,.15);color:var(--red)}
-.badge-purple{background:rgba(124,111,247,.15);color:var(--accent2)}
+/* ── БЕЙДЖИ ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.2px}
+.bg{background:var(--green-bg);color:var(--green)}
+.bb{background:var(--blue-bg);color:var(--blue)}
+.ba{background:var(--amber-bg);color:var(--amber)}
+.br{background:var(--red-bg);color:var(--red)}
+.bp{background:var(--purple-bg);color:var(--purple)}
 
-/* ─── PROGRESS ───────────────────────────────────────────────────────── */
-.progress{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
-.progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+/* ── ПРОГРЕСС-БАРЫ ── */
+.prog{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;transition:width .5s ease}
 
-/* ─── RANK ────────────────────────────────────────────────────────────── */
-.rank-1{color:gold;font-weight:700}
-.rank-2{color:silver}
-.rank-3{color:#cd7f32}
+/* Места в рейтинге */
+.rk1{color:#ffd700;font-weight:700}
+.rk2{color:#c0c0c0;font-weight:600}
+.rk3{color:#cd7f32;font-weight:600}
 
-/* ─── SCORE INPUT ────────────────────────────────────────────────────── */
-.score-table td input[type=number]{width:60px;padding:4px 6px;text-align:center}
-.score-cell-filled{background:rgba(62,207,142,.05)}
-
-/* ─── TOAST ──────────────────────────────────────────────────────────── */
-#toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;font-size:12px;opacity:0;transform:translateY(8px);transition:all .25s;z-index:999;max-width:300px}
+/* ── УВЕДОМЛЕНИЯ ── */
+#toast{position:fixed;bottom:20px;right:20px;padding:9px 14px;border-radius:var(--r2);font-size:11px;font-weight:500;opacity:0;transform:translateY(6px);transition:all .2s;z-index:999;border:1px solid;max-width:280px;backdrop-filter:blur(8px)}
 #toast.show{opacity:1;transform:translateY(0)}
-#toast.ok{border-color:var(--green);color:var(--green)}
-#toast.err{border-color:var(--red);color:var(--red)}
+#toast.ok{background:rgba(45,212,160,.12);border-color:rgba(45,212,160,.4);color:var(--green)}
+#toast.err{background:rgba(240,96,96,.12);border-color:rgba(240,96,96,.4);color:var(--red)}
 
-/* ─── MODAL ──────────────────────────────────────────────────────────── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .2s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:95vw}
-.modal h3{font-size:15px;margin-bottom:16px}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+/* ── МОДАЛКИ ── */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:600;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(3px)}
+.mo.open{opacity:1;pointer-events:all}
+.mc{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:22px;width:400px;max-width:94vw}
+.mc h3{font-size:14px;font-weight:600;margin-bottom:16px}
+.mf{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 
-/* ─── SENSITIVITY ─────────────────────────────────────────────────────── */
-.sens-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(42,47,69,.5)}
-.sens-bar-wrap{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
-.sens-bar{height:100%;border-radius:4px;transition:width .4s}
-.sens-changed{color:var(--amber);font-size:11px;font-weight:600}
-
-/* ─── EMPTY STATE ────────────────────────────────────────────────────── */
-.empty{padding:40px;text-align:center;color:var(--muted);font-size:13px}
-.empty p{margin-top:8px;font-size:12px}
-
-/* ─── LOADER ─────────────────────────────────────────────────────────── */
-.loader{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+/* ── ЗАГРУЗЧИК (спиннер) ── */
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .5s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ─── REPORT ─────────────────────────────────────────────────────────── */
-.report-winner{display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(124,111,247,.12),rgba(62,207,142,.08));border-radius:10px;border:1px solid rgba(124,111,247,.3);margin-bottom:16px}
-.report-winner .k-score{color:var(--accent2)}
+/* Большое число K */
+.knum{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1}
+
+/* Карточка победителя в отчёте */
+.winner-card{background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(45,212,160,.06));border:1px solid rgba(108,99,255,.3);border-radius:var(--r3);padding:20px;display:flex;align-items:center;gap:20px;margin-bottom:14px}
+
+/* ── АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ ── */
+.sens-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(37,42,61,.6)}
+.sens-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.sens-bar{height:100%;border-radius:3px;transition:width .4s ease}
+
+/* ── ОЦЕНКИ — компактный инпут в таблице ── */
+.score-input{width:58px!important;padding:4px 6px!important;text-align:center;font-family:var(--mono);font-size:12px}
+.score-filled td{background:rgba(45,212,160,.03)}
+
+/* Заголовок группы в таблицах */
+.grp-hdr{background:var(--bg3);padding:7px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+
+/* ── ПУСТЫЕ СОСТОЯНИЯ ── */
+.empty{padding:48px;text-align:center;color:var(--muted);font-size:13px}
+.empty .ei{font-size:36px;margin-bottom:8px;opacity:.5}
+.empty p{font-size:11px;margin-top:4px;color:var(--muted)}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ВКЛАДКА "ГЛАВНАЯ" — описание проекта
+   ══════════════════════════════════════════════════════════════════════ */
+.hero{background:linear-gradient(135deg,rgba(255, 186, 75, 0.412),rgba(249, 133, 45, 0.462));border:1px solid rgba(0, 0, 0, 0.692);border-radius:var(--r3);padding:36px 28px;margin-bottom:18px}
+.hero h1{font-size:26px;font-weight:600;letter-spacing:-.5px;margin-bottom:10px;color:var(--text)}
+.hero h1 span{color:var(--text)}
+.hero p{font-size:14px;line-height:1.7;color:var(--muted2);max-width:760px}
+
+.feature-card{padding:18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);transition:border .15s}
+.feature-card:hover{border-color:var(--border2)}
+.feature-card .fi{font-size:22px;margin-bottom:10px}
+.feature-card h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.feature-card p{font-size:11px;color:var(--muted2);line-height:1.55}
+
+.tab-info{padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);display:flex;gap:12px;align-items:flex-start}
+.tab-info .ti-icon{width:32px;height:32px;background:var(--accent-glow);border:1px solid rgba(108,99,255,.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.tab-info h5{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.tab-info p{font-size:11px;color:var(--muted2);line-height:1.5}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ВКЛАДКА "МАТЕМАТИКА" — формулы и расчёты
+   ══════════════════════════════════════════════════════════════════════ */
+.formula-block{background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin:12px 0;font-family:var(--mono);font-size:15px}
+.formula-block .formula-name{font-family:var(--sans);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.formula-block .formula{color:var(--accent-h);line-height:1.8}
+.formula-block .formula b{color:var(--green);font-weight:500}
+
+.math-step{padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;font-family:var(--mono);font-size:12px}
+.math-step .ms-num{color:var(--accent-h);font-weight:600;margin-right:8px}
+.math-step .ms-calc{color:var(--muted2)}
+.math-step .ms-result{color:var(--green);font-weight:600}
+
+.def-list{display:grid;grid-template-columns:1fr 2fr;gap:6px 16px;font-size:12px}
+.def-list dt{font-family:var(--mono);color:var(--accent-h);font-weight:500}
+.def-list dd{color:var(--muted2);line-height:1.5}
+
+.k-interpret-row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:var(--r);margin-bottom:4px;font-size:12px}
+.k-interpret-row .k-range{font-family:var(--mono);font-weight:600;min-width:90px}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ВКЛАДКА "ТЕСТИРОВАНИЕ" — локальный запуск моделей
+   ══════════════════════════════════════════════════════════════════════ */
+.test-progress-card{background:linear-gradient(135deg,rgba(108,99,255,.08),rgba(45,212,160,.04));border:1px solid var(--accent);border-radius:var(--r3);padding:20px;margin-bottom:14px}
+.big-prog{height:14px;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin:14px 0}
+.big-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-h));border-radius:7px;transition:width .5s ease;position:relative;overflow:hidden}
+/* Анимация полос на прогресс-баре */
+.big-prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shine 1.5s infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+.test-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.test-stat{padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
+.test-stat-label{font-size:9px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.test-stat-val{font-family:var(--mono);font-size:18px;font-weight:600}
+
+.test-log{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--muted2);max-height:240px;overflow-y:auto;white-space:pre-wrap;line-height:1.5}
+
+.test-model-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--muted2);transition:all .12s;user-select:none}
+.test-model-chip:hover{border-color:var(--border2);color:var(--text)}
+.test-model-chip.checked{background:var(--accent-glow);border-color:var(--accent);color:var(--accent-h)}
+
+/* Печать — стилизация для PDF */
+@media print{
+  #sidebar,#topbar,.no-print{display:none!important}
+  #main{overflow:visible}#content{overflow:visible;padding:0}
+  .panel{display:block!important}
+  body{background:#fff;color:#000}
+  .card,.card-sm{border:1px solid #ddd;break-inside:avoid}
+}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ── SIDEBAR ──────────────────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════════════
+     САЙДБАР: логотип, кнопка "Главная", список проектов
+     ═══════════════════════════════════════════════════════════════════ -->
 <div id="sidebar">
-  <div class="sidebar-logo">
-    <h1>⬡ AI CharacherHub</h1>
-    <p>Платформа оценки моделей</p>
+  <div class="s-logo" onclick="goHome()">
+    <div class="s-logo-icon">⬡</div>
+    <div><h1>AI CharacherHub</h1><p>Платформа оценки моделей</p></div>
   </div>
-  <div class="sidebar-section">Проекты</div>
-  <div class="sidebar-projects" id="proj-list">
-    <div class="empty">Загрузка...</div>
+
+  <!-- Кнопка перехода на главную страницу -->
+  <button class="s-home-btn" id="home-btn" onclick="goHome()">
+    🏠 Главная страница
+  </button>
+
+  <div class="s-section">Проекты</div>
+  <div class="s-projects" id="proj-list">
+    <div class="empty" style="padding:16px"><p>Загрузка...</p></div>
   </div>
-  <div style="padding:12px 8px;border-top:1px solid var(--border)">
-    <button class="btn btn-primary" style="width:100%" onclick="openNewProject()">+ Новый проект</button>
+  <div class="s-footer">
+    <button class="btn btn-accent" style="width:100%;justify-content:center" onclick="openModal('mo-new-proj')">+ Новый проект</button>
   </div>
 </div>
 
-<!-- ── MAIN ─────────────────────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════════════
+     ОСНОВНАЯ ОБЛАСТЬ: топбар с вкладками + контент
+     ═══════════════════════════════════════════════════════════════════ -->
 <div id="main">
   <div id="topbar">
-    <h2 id="proj-title">Выберите проект</h2>
-    <div class="tabs">
+    <div id="proj-title">Главная страница</div>
+    <!-- Вкладки: 6 обязательных по ТЗ + 2 новые (Математика, Тестирование) -->
+    <div class="tabs" id="proj-tabs" style="display:none">
       <button class="tab active" data-tab="overview">Проект</button>
       <button class="tab" data-tab="criteria">Критерии</button>
       <button class="tab" data-tab="scores">Оценки</button>
       <button class="tab" data-tab="results">Расчёт K</button>
+      <button class="tab" data-tab="math">Математика</button>
+      <button class="tab" data-tab="testing">Тестирование</button>
       <button class="tab" data-tab="analytics">Аналитика</button>
       <button class="tab" data-tab="comparison">Сравнение</button>
     </div>
   </div>
+
   <div id="content">
 
-    <!-- ══ 1. OVERVIEW ══════════════════════════════════════════════════════ -->
-    <div class="panel active" id="panel-overview">
-      <div id="overview-empty" class="empty">
-        <div style="font-size:32px">⬡</div>
-        <p>Выберите проект из списка слева или создайте новый</p>
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 0: ГЛАВНАЯ СТРАНИЦА (показывается по умолчанию)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="panel active" id="panel-home">
+      <!-- Hero-секция: название и краткое описание -->
+      <div class="hero">
+        <h1>Платформа комплексной оценки <span>моделей искусственного интеллекта</span></h1>
+        <p>
+          Решает фундаментальную проблему выбора ИИ-модели: сегодня этот выбор часто субъективен или ограничен одной метрикой (accuracy, F1, mAP).
+          Наша платформа сравнивает модели по <b style="color:var(--text)">трём группам критериев</b> — точность, устойчивость, контекстная согласованность —
+          с пользовательскими весами и формирует <b style="color:var(--text)">интегральный коэффициент качества K ∈ [0..1]</b> с объясняемым результатом.
+        </p>
       </div>
-      <div id="overview-content" style="display:none">
-        <div class="grid4" style="margin-bottom:16px">
-          <div class="card-sm"><div class="stat-val" id="ov-models">—</div><div class="stat-label">Моделей</div></div>
-          <div class="card-sm"><div class="stat-val" id="ov-criteria">—</div><div class="stat-label">Критериев</div></div>
-          <div class="card-sm"><div class="stat-val" id="ov-leader">—</div><div class="stat-label">Лидер рейтинга</div></div>
-          <div class="card-sm"><div class="stat-val" id="ov-leader-k" style="color:var(--accent2)">—</div><div class="stat-label">Показатель K</div></div>
-        </div>
-        <div class="grid2">
-          <div class="card">
-            <h3>Модели в проекте</h3>
-            <div id="ov-models-list"></div>
-            <div class="form-row" style="margin-top:12px">
-              <div class="form-group" style="flex:1"><input id="new-model-name" placeholder="Название модели" /></div>
-              <div class="form-group">
-                <select id="new-model-type">
-                  <option value="detection">Детекция</option>
-                  <option value="classification">Классификация</option>
-                  <option value="text">Текст / NLP</option>
-                  <option value="speech">Речь / ASR</option>
-                  <option value="segmentation">Сегментация</option>
-                  <option value="llm">LLM</option>
-                  <option value="custom">Другое</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" onclick="addModel()">+ Добавить</button>
-            </div>
+
+      <!-- Для кого: целевая аудитория -->
+      <div class="card" style="margin-bottom:14px">
+        <h3>Для кого предназначен</h3>
+        <div class="g3">
+          <div class="feature-card">
+            <div class="fi">🔬</div>
+            <h4>Исследователи и ML-инженеры</h4>
+            <p>Сравнение архитектур моделей под конкретные задачи. Объективное обоснование выбора через интегральный показатель.</p>
           </div>
-          <div class="card">
-            <h3>Информация о проекте</h3>
-            <table style="width:100%">
-              <tr><td style="color:var(--muted);font-size:12px">Название</td><td id="ov-name">—</td></tr>
-              <tr><td style="color:var(--muted);font-size:12px">Создан</td><td id="ov-created">—</td></tr>
-              <tr><td style="color:var(--muted);font-size:12px">Последний расчёт</td><td id="ov-calc">—</td></tr>
-              <tr><td style="color:var(--muted);font-size:12px">Статус отчёта</td><td id="ov-status">—</td></tr>
-              <tr><td style="color:var(--muted);font-size:12px">Описание</td><td id="ov-desc" style="font-size:12px">—</td></tr>
-            </table>
-            <div style="margin-top:12px">
-              <button class="btn btn-danger btn-sm" onclick="deleteProject()" style="font-size:11px">Удалить проект</button>
+          <div class="feature-card">
+            <div class="fi">🏢</div>
+            <h4>Корпоративные команды</h4>
+            <p>Выбор оптимальной модели под прикладной сценарий с учётом бизнес-ограничений: скорость, размер, стоимость.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fi">🎓</div>
+            <h4>Преподаватели и аналитики</h4>
+            <p>Формализация процесса экспертной оценки. Воспроизводимые результаты и автоматический отчёт.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ключевые возможности -->
+      <div class="card" style="margin-bottom:14px">
+        <h3>Ключевые возможности</h3>
+        <div class="g4">
+          <div class="feature-card">
+            <div class="fi">📊</div>
+            <h4>Взвешенная оценка</h4>
+            <p>Формула K = S_k / S_max по ТЗ. Поддержка любого количества критериев и моделей.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fi">🔬</div>
+            <h4>Локальное тестирование</h4>
+            <p>Запуск моделей YOLO прямо в браузере. Прогресс-бар, ETA, автоматическая нормировка метрик.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fi">📈</div>
+            <h4>Анализ чувствительности</h4>
+            <p>Изменение веса критерия → пересчёт K. Видно сразу: устойчив ли выбор или лидер меняется.</p>
+          </div>
+          <div class="feature-card">
+            <div class="fi">📋</div>
+            <h4>Объяснимый отчёт</h4>
+            <p>Не просто "K=0.85" — а почему конкретная модель победила и при каких условиях выбор изменится.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Краткий обзор всех вкладок интерфейса -->
+      <div class="card">
+        <h3>Обзор страниц интерфейса</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="tab-info">
+            <div class="ti-icon">📁</div>
+            <div><h5>Проект</h5><p>Дашборд с лидером рейтинга, списком моделей и метаинформацией о проекте.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">⚖️</div>
+            <div><h5>Критерии</h5><p>Управление весами и группировкой критериев оценки. Нормировка к Σw = 1.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">✏️</div>
+            <div><h5>Оценки</h5><p>Матрица оценок модели × критерии. Ввод вручную или импорт CSV.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">🧮</div>
+            <div><h5>Расчёт K</h5><p>Запуск расчёта по формулам ТЗ. Рейтинг моделей с детализацией по группам.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">📐</div>
+            <div><h5>Математика</h5><p>Прозрачное отображение всех формул и пошагового расчёта K_k для каждой модели.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">⚡</div>
+            <div><h5>Тестирование</h5><p>Локальный запуск моделей YOLO с прогресс-баром и автоматической оценкой.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">📊</div>
+            <div><h5>Аналитика</h5><p>Bar chart, stacked bar, radar — визуализация K. Финальный отчёт с рекомендацией.</p></div>
+          </div>
+          <div class="tab-info">
+            <div class="ti-icon">🔬</div>
+            <div><h5>Сравнение</h5><p>Сравнительная таблица + анализ чувствительности к изменению весов критериев.</p></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;padding:14px;background:var(--bg3);border-radius:var(--r);border-left:3px solid var(--accent)">
+          <p>
+            <b style="color:var(--accent-h)">Как начать:</b> выберите один из готовых демо-проектов в боковом меню слева
+            (детекция объектов или NLP), либо создайте новый проект через «+ Новый проект».
+          </p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3>ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ</h3>
+          <div style="margin-top:18px;padding:14px;background:var(--red-bg);border-radius:var(--r);border-left:3px solid var(--red)">
+            <p style="font-size:12px;color:var(--muted2);line-height:1.6">
+              <b style="color:var(--red)">Проект создан для хакатона "Весенний Код" командой "Discipline".</b> 
+            </p>
+          </div>
+      </div>
+    </div>
+    
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 1: ПРОЕКТ — дашборд проекта (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-overview">
+      <div class="g4" style="margin-bottom:14px">
+        <div class="card-sm"><div class="stat-val" id="ov-nm">—</div><div class="stat-label">Моделей</div></div>
+        <div class="card-sm"><div class="stat-val" id="ov-nc">—</div><div class="stat-label">Критериев</div></div>
+        <div class="card-sm"><div class="stat-val" id="ov-ldr" style="font-size:16px;padding-top:4px">—</div><div class="stat-label">Лидер рейтинга</div></div>
+        <div class="card-sm"><div class="stat-val knum" id="ov-k" style="color:var(--accent-h)">—</div><div class="stat-label">Коэффициент K</div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <h3>Модели проекта</h3>
+          <div id="ov-mlist"></div>
+          <div class="fr" style="margin-top:12px">
+            <div class="fg" style="flex:1"><input id="nm-name" placeholder="Название модели (напр. YOLOv8n)"></div>
+            <div class="fg" style="width:140px">
+              <select id="nm-type">
+                <option value="detection">Детекция</option>
+                <option value="classification">Классификация</option>
+                <option value="text">NLP / Текст</option>
+                <option value="speech">Речь / ASR</option>
+                <option value="segmentation">Сегментация</option>
+                <option value="llm">LLM</option>
+                <option value="custom">Другое</option>
+              </select>
             </div>
+            <button class="btn btn-accent" onclick="addModel()">+ Добавить</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Информация о проекте</h3>
+          <table style="width:100%">
+            <tr><td style="color:var(--muted);font-size:11px;padding:5px 0">Название</td><td id="ov-pname" style="font-size:12px">—</td></tr>
+            <tr><td style="color:var(--muted);font-size:11px;padding:5px 0">Описание</td><td id="ov-pdesc" style="font-size:11px;color:var(--muted2)">—</td></tr>
+            <tr><td style="color:var(--muted);font-size:11px;padding:5px 0">Создан</td><td id="ov-pcreated" style="font-size:12px">—</td></tr>
+            <tr><td style="color:var(--muted);font-size:11px;padding:5px 0">Расчёт</td><td id="ov-pcalc" style="font-size:12px">—</td></tr>
+            <tr><td style="color:var(--muted);font-size:11px;padding:5px 0">Статус</td><td id="ov-pstatus">—</td></tr>
+          </table>
+          <div style="margin-top:14px;display:flex;gap:8px">
+            <button class="btn btn-danger" onclick="deleteProject()">Удалить проект</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ══ 2. CRITERIA ══════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 2: КРИТЕРИИ — управление весами критериев (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="panel" id="panel-criteria">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="display:flex;gap:8px">
+      <div class="fr" style="margin-bottom:14px;justify-content:space-between">
+        <div class="fr">
           <button class="btn btn-ghost" onclick="normWeights()">⟳ Нормировать веса</button>
-          <button class="btn btn-ghost" onclick="addCriterionModal()">+ Добавить критерий</button>
+          <button class="btn btn-ghost" onclick="openModal('mo-add-crit')">+ Критерий</button>
         </div>
-        <span style="color:var(--muted);font-size:12px" id="weight-sum-label"></span>
+        <span style="color:var(--muted);font-size:11px;padding:6px 0" id="wsum-lbl"></span>
       </div>
-      <div id="criteria-by-group"></div>
+      <div id="crit-body"></div>
     </div>
 
-    <!-- ══ 3. SCORES ════════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 3: ОЦЕНКИ — матрица оценок (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="panel" id="panel-scores">
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="saveAllScores()">💾 Сохранить оценки</button>
-        <label class="btn btn-ghost" style="cursor:pointer">
-          📂 Импорт CSV <input type="file" accept=".csv" onchange="importCSV(this)" style="display:none">
-        </label>
-        <button class="btn btn-ghost" onclick="downloadCSVTemplate()">⬇ Шаблон CSV</button>
-        <span style="color:var(--muted);font-size:12px;padding:7px 0">Оценки: 1 (низкое) — 5 (отличное)</span>
+      <div class="fr" style="margin-bottom:14px">
+        <button class="btn btn-accent" onclick="saveAllScores()">💾 Сохранить</button>
+        <label class="btn btn-ghost" style="cursor:pointer">📂 Импорт CSV<input type="file" accept=".csv" onchange="importCSV(this)" style="display:none"></label>
+        <button class="btn btn-ghost" onclick="dlTemplate()">⬇ Шаблон CSV</button>
+        <span style="color:var(--muted);font-size:11px;padding:6px 0;margin-left:4px">Шкала 1–5</span>
       </div>
-      <div class="tbl-wrap" id="scores-table-wrap">
-        <div class="empty">Загрузка...</div>
-      </div>
+      <div class="tw" id="scores-wrap"><div class="empty">Загрузка...</div></div>
     </div>
 
-    <!-- ══ 4. RESULTS ══════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 4: РАСЧЁТ K (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="panel" id="panel-results">
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="btn btn-primary" id="calc-btn" onclick="runCalculation()">▶ Запустить расчёт</button>
-        <span style="color:var(--muted);font-size:12px;padding:7px 0" id="calc-ts"></span>
+      <div class="fr" style="margin-bottom:14px">
+        <button class="btn btn-accent" id="calc-btn" onclick="runCalc()">▶ Запустить расчёт</button>
+        <span style="color:var(--muted);font-size:11px;padding:6px 0" id="calc-ts"></span>
       </div>
-      <div id="results-content">
-        <div class="empty">Нажмите «Запустить расчёт» для получения результатов</div>
+      <div id="results-body">
+        <div class="empty"><div class="ei">📊</div>Запустите расчёт<p>После ввода оценок нажмите «Запустить расчёт»</p></div>
       </div>
     </div>
 
-    <!-- ══ 5. ANALYTICS ════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 5: МАТЕМАТИКА — новая вкладка с формулами и расчётами
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-math">
+      <div id="math-body">
+        <div class="empty"><div class="ei">📐</div>Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 6: ЛОКАЛЬНОЕ ТЕСТИРОВАНИЕ — новая вкладка
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="panel" id="panel-testing">
+
+      <!-- ── YOLO: детекция ── -->
+      <div class="card" style="margin-bottom:14px">
+        <h3>Локальный запуск моделей детекции (YOLO)</h3>
+        <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:14px">
+          Реальный прогон YOLO на тестовых изображениях. Метрики: confidence, FPS, устойчивость к шуму.
+          Веса хранятся в <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent-h)">backend/models/detection/</code>.
+          Требует: <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent-h)">pip install ultralytics opencv-python</code>
+        </p>
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:8px">Выберите YOLO-модели</label>
+          <div id="test-models-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <div class="fr">
+          <button class="btn btn-accent" id="test-start-btn" onclick="startTest()">▶ Запустить YOLO-тест</button>
+          <span style="color:var(--muted);font-size:11px;padding:6px 0">Веса скачиваются автоматически при первом запуске</span>
+        </div>
+      </div>
+
+      <!-- ── NLP: тональность ── -->
+      <div class="card" style="margin-bottom:14px">
+        <h3>Локальный запуск NLP-моделей (sentiment analysis)</h3>
+        <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:14px">
+          Тестирование моделей анализа тональности на наборе русскоязычных текстов.
+          Метрики: accuracy, robustness (зашумлённые тексты), скорость.
+          Кэш моделей — <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent-h)">backend/models/nlp/</code>.
+          Требует: <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent-h)">pip install transformers torch</code>
+        </p>
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:8px">Выберите NLP-модели</label>
+          <div id="test-nlp-models-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <div style="margin-bottom:12px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--muted2)">
+          <b style="color:var(--text)">Тестовые тексты:</b> 8 русскоязычных отзывов (позитивные, негативные, нейтральные)
+          + зашумлённые варианты (caps, сленг) для проверки устойчивости.
+        </div>
+        <div class="fr">
+          <button class="btn btn-accent" id="test-nlp-start-btn" onclick="startNlpTest()">▶ Запустить NLP-тест</button>
+          <span style="color:var(--muted);font-size:11px;padding:6px 0">Модели скачиваются при первом запуске (~30–200 МБ)</span>
+        </div>
+      </div>
+
+      <!-- Прогресс — общий для YOLO и NLP -->
+      <div id="test-progress-wrap" style="display:none"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 7: АНАЛИТИКА (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="panel" id="panel-analytics">
-      <div id="analytics-content">
-        <div class="empty">Сначала запустите расчёт на вкладке «Расчёт K»</div>
+      <div class="fr no-print" style="margin-bottom:14px">
+        <button class="btn btn-ghost" onclick="window.print()">🖨 Печать / PDF</button>
       </div>
+      <div id="analytics-body"><div class="empty"><div class="ei">📈</div>Аналитика появится после расчёта</div></div>
     </div>
 
-    <!-- ══ 6. COMPARISON ══════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ВКЛАДКА 8: СРАВНЕНИЕ + АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ (ТЗ)
+         ═══════════════════════════════════════════════════════════════ -->
     <div class="panel" id="panel-comparison">
-      <div id="comparison-content">
-        <div class="empty">Сначала запустите расчёт на вкладке «Расчёт K»</div>
-      </div>
+      <div id="comparison-body"><div class="empty"><div class="ei">🔬</div>Сравнение появится после расчёта</div></div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-</div><!-- /app -->
+  </div>
+</div>
+</div>
 
-<!-- ── MODALS ────────────────────────────────────────────────────────────── -->
-<div class="modal-overlay" id="modal-new-project">
-  <div class="modal">
+<!-- ═══════════════════════════════════════════════════════════════════
+     МОДАЛКИ
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="mo" id="mo-new-proj">
+  <div class="mc">
     <h3>Новый проект</h3>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div class="form-group"><label>Название *</label><input id="np-name" placeholder="Выбор модели для службы поддержки"></div>
-      <div class="form-group"><label>Описание</label><textarea id="np-desc" rows="3" style="resize:vertical" placeholder="Контекст задачи..."></textarea></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="fg"><label>Название *</label><input id="np-name" placeholder="Выбор модели для задачи X"></div>
+      <div class="fg"><label>Описание</label><textarea id="np-desc" rows="3" style="resize:vertical" placeholder="Контекст задачи..."></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-new-project')">Отмена</button>
-      <button class="btn btn-primary" onclick="createProject()">Создать</button>
-    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('mo-new-proj')">Отмена</button><button class="btn btn-accent" onclick="createProject()">Создать</button></div>
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-add-criterion">
-  <div class="modal">
+<div class="mo" id="mo-add-crit">
+  <div class="mc">
     <h3>Добавить критерий</h3>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div class="form-group"><label>Название *</label><input id="ac-name" placeholder="Точность ответа"></div>
-      <div class="form-group"><label>Описание</label><input id="ac-desc" placeholder="Краткое описание критерия"></div>
-      <div class="form-row">
-        <div class="form-group" style="flex:1"><label>Вес (0–1)</label><input id="ac-weight" type="number" min="0" max="1" step="0.05" value="0.1"></div>
-        <div class="form-group" style="flex:1"><label>Группа</label>
-          <select id="ac-group">
-            <option value="accuracy">Точность</option>
-            <option value="robustness">Устойчивость</option>
-            <option value="context">Контекст</option>
-          </select>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="fg"><label>Название *</label><input id="ac-name" placeholder="Точность ответа"></div>
+      <div class="fg"><label>Описание</label><input id="ac-desc" placeholder="Краткое описание"></div>
+      <div class="fr">
+        <div class="fg" style="flex:1"><label>Вес (0–1)</label><input id="ac-w" type="number" min="0" max="1" step="0.05" value="0.1"></div>
+        <div class="fg" style="flex:1"><label>Группа</label>
+          <select id="ac-grp"><option value="accuracy">Точность</option><option value="robustness">Устойчивость</option><option value="context">Контекст</option></select>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-add-criterion')">Отмена</button>
-      <button class="btn btn-primary" onclick="createCriterion()">Добавить</button>
-    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeModal('mo-add-crit')">Отмена</button><button class="btn btn-accent" onclick="createCrit()">Добавить</button></div>
   </div>
 </div>
 
 <div id="toast"></div>
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT — вся логика SPA
+     ═══════════════════════════════════════════════════════════════════ -->
 <script>
-// ── STATE ────────────────────────────────────────────────────────────────────
-const API = '';
-let currentPid  = null;
-let currentProj = null;
-let chartInstances = {};
+/* ── СОСТОЯНИЕ ПРИЛОЖЕНИЯ ── */
+const API='';                    // базовый URL API (пусто = относительные пути)
+let pid=null;                    // ID текущего проекта
+let proj=null;                   // объект текущего проекта (с моделями и критериями)
+let charts={};                   // экземпляры Chart.js (для destroy() при обновлении)
+let testPollInterval=null;       // setInterval для опроса статуса тестирования
 
-// ── API helpers ──────────────────────────────────────────────────────────────
-async function api(method, path, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(API + path, opts);
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({ detail: r.statusText }));
-    throw new Error(err.detail || 'API error');
+/* ════════════════════════════════════════════════════════════════
+   API-ОБЁРТКА — единая функция для всех запросов
+   ════════════════════════════════════════════════════════════════ */
+async function api(m,p,b){
+  const o={method:m,headers:{'Content-Type':'application/json'}};
+  if(b)o.body=JSON.stringify(b);
+  const r=await fetch(API+p,o);
+  if(!r.ok){
+    const e=await r.json().catch(()=>({detail:r.statusText}));
+    throw new Error(e.detail||'API error')
   }
   return r.json();
 }
-const GET  = p        => api('GET',    p);
-const POST = (p, b)   => api('POST',   p, b);
-const PUT  = (p, b)   => api('PUT',    p, b);
-const DEL  = p        => api('DELETE', p);
+const GET=(p)=>api('GET',p);
+const POST=(p,b)=>api('POST',p,b);
+const PUT=(p,b)=>api('PUT',p,b);
+const DEL=(p)=>api('DELETE',p);
 
-function toast(msg, type = 'ok') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `show ${type}`;
-  setTimeout(() => el.className = '', 2600);
+/* ── Уведомления (тост в правом нижнем углу) ── */
+function toast(msg,t='ok'){
+  const e=document.getElementById('toast');
+  e.textContent=msg;
+  e.className=`show ${t}`;
+  setTimeout(()=>e.className='',2800);
 }
 
-// ── TABS ─────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(t => {
-  t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+/* ── Утилиты: экранирование HTML и форматирование даты ── */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fdt(s){if(!s)return'—';try{return new Date((s.endsWith('Z')?s:s+'Z')).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return s}}
+function kc(k){return k>=.9?'var(--green)':k>=.75?'var(--accent-h)':k>=.6?'var(--amber)':'var(--red)'}
+function kbadge(k,lbl){const cls=k>=.9?'bg':k>=.75?'bb':k>=.6?'ba':'br';return`<span class="badge ${cls}">${esc(lbl)}</span>`}
+
+/* ════════════════════════════════════════════════════════════════
+   НАВИГАЦИЯ: переключение вкладок и переход на главную
+   ════════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
-    if (currentPid) {
-      if (t.dataset.tab === 'scores')     renderScoresTable();
-      if (t.dataset.tab === 'criteria')   renderCriteria();
-      if (t.dataset.tab === 'analytics')  loadAnalytics();
-      if (t.dataset.tab === 'comparison') loadComparison();
-    }
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    if(!pid)return;
+    // Лениво подгружаем данные при переключении вкладки
+    if(t.dataset.tab==='scores')renderScores();
+    if(t.dataset.tab==='criteria')renderCriteria();
+    if(t.dataset.tab==='analytics')loadAnalytics();
+    if(t.dataset.tab==='comparison')loadComparison();
+    if(t.dataset.tab==='math')renderMath();
+    if(t.dataset.tab==='testing')renderTestingTab();
   });
 });
 
-// ── PROJECT LIST ─────────────────────────────────────────────────────────────
-async function loadProjects() {
-  const list = await GET('/api/projects').catch(() => []);
-  const el = document.getElementById('proj-list');
-  if (!list.length) { el.innerHTML = '<div class="empty" style="padding:16px;text-align:center;font-size:12px">Нет проектов</div>'; return; }
-  el.innerHTML = list.map(p => `
-    <div class="proj-item ${p.id === currentPid ? 'active' : ''}" onclick="selectProject(${p.id})">
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>
-      ${p.leader_k != null ? `<span class="k-badge" style="color:var(--accent2)">${p.leader_k.toFixed(2)}</span>` : ''}
+function goHome(){
+  pid=null;proj=null;
+  document.getElementById('proj-title').textContent='Главная страница';
+  document.getElementById('proj-tabs').style.display='none';
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('panel-home').classList.add('active');
+  document.getElementById('home-btn').classList.add('active');
+  document.querySelectorAll('.proj-item').forEach(el=>el.classList.remove('active'));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   СПИСОК ПРОЕКТОВ В САЙДБАРЕ
+   ════════════════════════════════════════════════════════════════ */
+async function loadProjects(){
+  const list=await GET('/api/projects').catch(()=>[]);
+  const el=document.getElementById('proj-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty" style="padding:16px"><p>Нет проектов</p></div>';
+    return;
+  }
+  el.innerHTML=list.map(p=>`
+    <div class="proj-item ${p.id===pid?'active':''}" onclick="selectProject(${p.id})">
+      <span class="pname">${esc(p.name)}</span>
+      ${p.leader_k!=null?`<span class="proj-k">${p.leader_k.toFixed(2)}</span>`:''}
     </div>`).join('');
 }
 
-async function selectProject(pid) {
-  currentPid = pid;
-  const proj = await GET(`/api/projects/${pid}`);
-  currentProj = proj;
-  document.getElementById('proj-title').textContent = proj.name;
-  document.querySelectorAll('.proj-item').forEach(el => el.classList.toggle('active', +el.onclick.toString().match(/\d+/) === pid));
+async function selectProject(id){
+  pid=id;
+  const p=await GET(`/api/projects/${id}`);
+  proj=p;
+  // Топбар показывает выбранный проект и переключает на вкладку "Проект"
+  document.getElementById('proj-title').innerHTML=`<span>${esc(p.name)}</span>`;
+  document.getElementById('proj-tabs').style.display='';
+  document.getElementById('home-btn').classList.remove('active');
+  // Скрываем главную, показываем "Проект"
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelector('.tab[data-tab="overview"]').classList.add('active');
+  document.getElementById('panel-overview').classList.add('active');
+
   loadProjects();
-  renderOverview(proj);
-  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
-  if (activeTab === 'criteria')   renderCriteria();
-  if (activeTab === 'scores')     renderScoresTable();
-  if (activeTab === 'analytics')  loadAnalytics();
-  if (activeTab === 'comparison') loadComparison();
+  renderOverview(p);
 }
 
-// ── 1. OVERVIEW ──────────────────────────────────────────────────────────────
-function renderOverview(proj) {
-  document.getElementById('overview-empty').style.display = 'none';
-  document.getElementById('overview-content').style.display = 'block';
-  document.getElementById('ov-models').textContent   = proj.models.length;
-  document.getElementById('ov-criteria').textContent = proj.criteria.filter(c => c.enabled).length;
-  document.getElementById('ov-name').textContent     = proj.name;
-  document.getElementById('ov-created').textContent  = fmtDate(proj.created_at);
-  document.getElementById('ov-calc').textContent     = proj.last_calculated ? fmtDate(proj.last_calculated) : '—';
-  document.getElementById('ov-desc').textContent     = proj.description || '—';
-  const statusEl = document.getElementById('ov-status');
-  statusEl.innerHTML = proj.report_status === 'ready'
-    ? '<span class="badge badge-green">Готов</span>'
-    : '<span class="badge badge-amber">Ожидание расчёта</span>';
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 1: ОВЕРВЬЮ ПРОЕКТА
+   ════════════════════════════════════════════════════════════════ */
+function renderOverview(p){
+  document.getElementById('ov-nm').textContent=p.models.length;
+  document.getElementById('ov-nc').textContent=p.criteria.filter(c=>c.enabled).length;
+  document.getElementById('ov-pname').textContent=p.name;
+  document.getElementById('ov-pdesc').textContent=p.description||'—';
+  document.getElementById('ov-pcreated').textContent=fdt(p.created_at);
+  document.getElementById('ov-pcalc').textContent=p.last_calculated?fdt(p.last_calculated):'Ещё не запускался';
+  document.getElementById('ov-pstatus').innerHTML=p.report_status==='ready'?'<span class="badge bg">Готов</span>':'<span class="badge ba">Ожидание расчёта</span>';
 
-  // fetch latest results for leader
-  GET(`/api/projects/${proj.id}/results`).then(d => {
-    const ranked = Object.values(d.results).sort((a,b) => a.rank - b.rank);
-    if (ranked.length) {
-      document.getElementById('ov-leader').textContent   = ranked[0].model_name;
-      document.getElementById('ov-leader-k').textContent = ranked[0].k.toFixed(4);
+  // Лидер — берём из последнего расчёта
+  GET(`/api/projects/${p.id}/results`).then(d=>{
+    const top=Object.values(d.results).sort((a,b)=>a.rank-b.rank)[0];
+    if(top){
+      document.getElementById('ov-ldr').textContent=top.model_name;
+      document.getElementById('ov-k').textContent=top.k.toFixed(4);
     }
-  }).catch(() => {
-    document.getElementById('ov-leader').textContent   = '—';
-    document.getElementById('ov-leader-k').textContent = '—';
+  }).catch(()=>{
+    document.getElementById('ov-ldr').textContent='—';
+    document.getElementById('ov-k').textContent='—';
   });
 
-  // Models list
-  const ml = document.getElementById('ov-models-list');
-  if (!proj.models.length) { ml.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Нет моделей</div>'; return; }
-  ml.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Название</th><th>Тип</th><th></th></tr></thead>
-    <tbody>${proj.models.map(m => `<tr>
-      <td>${esc(m.name)}</td>
-      <td><span class="badge badge-purple">${esc(m.model_type)}</span></td>
-      <td><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteModel(${m.id})">×</button></td>
+  // Список моделей
+  const ml=document.getElementById('ov-mlist');
+  if(!p.models.length){
+    ml.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">Нет моделей</div>';
+    return;
+  }
+  ml.innerHTML=`<div class="tw"><table>
+    <thead><tr><th>Модель</th><th>Тип</th><th></th></tr></thead>
+    <tbody>${p.models.map(m=>`<tr>
+      <td style="font-weight:500">${esc(m.name)}</td>
+      <td><span class="badge bp">${esc(m.model_type)}</span></td>
+      <td><button class="btn btn-danger" style="padding:2px 7px;font-size:10px" onclick="delModel(${m.id})">×</button></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
 }
 
-async function addModel() {
-  const name = document.getElementById('new-model-name').value.trim();
-  const type = document.getElementById('new-model-type').value;
-  if (!name) { toast('Введите название модели', 'err'); return; }
-  await POST(`/api/projects/${currentPid}/models`, { name, model_type: type, description: '' });
-  document.getElementById('new-model-name').value = '';
+async function addModel(){
+  const name=document.getElementById('nm-name').value.trim();
+  const type=document.getElementById('nm-type').value;
+  if(!name){toast('Введите название','err');return}
+  await POST(`/api/projects/${pid}/models`,{name,model_type:type,description:''});
+  document.getElementById('nm-name').value='';
   toast('Модель добавлена');
-  selectProject(currentPid);
+  selectProject(pid);
 }
 
-async function deleteModel(mid) {
-  if (!confirm('Удалить модель и все её оценки?')) return;
-  await DEL(`/api/projects/${currentPid}/models/${mid}`);
+async function delModel(mid){
+  if(!confirm('Удалить модель?'))return;
+  await DEL(`/api/projects/${pid}/models/${mid}`);
   toast('Удалено');
-  selectProject(currentPid);
+  selectProject(pid);
 }
 
-async function deleteProject() {
-  if (!confirm(`Удалить проект "${currentProj?.name}"?`)) return;
-  await DEL(`/api/projects/${currentPid}`);
-  currentPid = null; currentProj = null;
-  document.getElementById('proj-title').textContent = 'Выберите проект';
-  document.getElementById('overview-empty').style.display = '';
-  document.getElementById('overview-content').style.display = 'none';
+async function deleteProject(){
+  if(!confirm(`Удалить проект "${proj?.name}"?`))return;
+  await DEL(`/api/projects/${pid}`);
+  goHome();
   loadProjects();
   toast('Проект удалён');
 }
 
-// ── 2. CRITERIA ───────────────────────────────────────────────────────────────
-async function renderCriteria() {
-  const criteria = await GET(`/api/projects/${currentPid}/criteria`);
-  const groups = { accuracy: [], robustness: [], context: [] };
-  criteria.forEach(c => { (groups[c.group_name] ||= []).push(c); });
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 2: КРИТЕРИИ
+   ════════════════════════════════════════════════════════════════ */
+async function renderCriteria(){
+  const cr=await GET(`/api/projects/${pid}/criteria`);
+  // Группируем критерии по группам для красивого вывода
+  const groups={accuracy:[],robustness:[],context:[]};
+  cr.forEach(c=>{(groups[c.group_name]||=[]).push(c)});
+  const tw=cr.filter(c=>c.enabled).reduce((s,c)=>s+c.weight,0);
+  document.getElementById('wsum-lbl').textContent=`Σ весов = ${tw.toFixed(4)}`;
 
-  const groupNames = { accuracy: '🎯 Точность и полнота', robustness: '🛡 Устойчивость', context: '🔗 Контекстная согласованность' };
-  const groupColors = { accuracy: 'var(--accent2)', robustness: 'var(--green)', context: 'var(--amber)' };
+  const gn={accuracy:'🎯 Точность и полнота',robustness:'🛡 Устойчивость',context:'🔗 Контекстная согласованность'};
+  const gc={accuracy:'var(--accent-h)',robustness:'var(--green)',context:'var(--amber)'};
 
-  // Weight sum
-  const totalW = criteria.filter(c => c.enabled).reduce((s, c) => s + c.weight, 0);
-  document.getElementById('weight-sum-label').textContent = `Сумма весов: ${totalW.toFixed(4)}`;
-
-  const el = document.getElementById('criteria-by-group');
-  el.innerHTML = Object.entries(groups).map(([g, list]) => {
-    if (!list.length) return '';
-    const gW = list.filter(c=>c.enabled).reduce((s,c)=>s+c.weight,0);
-    return `<div class="card" style="margin-bottom:12px">
+  document.getElementById('crit-body').innerHTML=Object.entries(groups).map(([g,list])=>{
+    if(!list.length)return'';
+    const gw=list.filter(c=>c.enabled).reduce((s,c)=>s+c.weight,0);
+    return`<div class="card" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="color:${groupColors[g]};margin:0">${groupNames[g] || g}</h3>
-        <span style="font-size:12px;color:var(--muted)">Σw = <b style="color:${groupColors[g]}">${gW.toFixed(3)}</b></span>
+        <h3 style="color:${gc[g]};margin:0">${gn[g]||g}</h3>
+        <span style="font-size:11px;color:var(--muted)">Σw = <b style="color:${gc[g]}">${gw.toFixed(3)}</b></span>
       </div>
-      <div class="tbl-wrap"><table>
+      <div class="tw"><table>
         <thead><tr><th>Критерий</th><th>Описание</th><th>Вес</th><th>Вкл</th><th></th></tr></thead>
-        <tbody>${list.map(c => `<tr id="crit-row-${c.id}" class="${!c.enabled ? 'opacity:0.4' : ''}">
-          <td><b>${esc(c.name)}</b></td>
-          <td style="color:var(--muted);font-size:12px">${esc(c.description||'')}</td>
-          <td>
-            <input type="number" min="0" max="1" step="0.05" value="${c.weight}"
-              style="width:70px"
-              onchange="updateCriterion(${c.id}, {weight: parseFloat(this.value)})">
-          </td>
-          <td>
-            <input type="checkbox" ${c.enabled ? 'checked' : ''}
-              onchange="updateCriterion(${c.id}, {enabled: this.checked ? 1 : 0})">
-          </td>
-          <td>
-            <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteCriterion(${c.id})">×</button>
-          </td>
+        <tbody>${list.map(c=>`<tr style="${!c.enabled?'opacity:.45':''}">
+          <td style="font-weight:500;font-size:12px">${esc(c.name)}</td>
+          <td style="color:var(--muted);font-size:11px">${esc(c.description||'')}</td>
+          <td><input type="number" min="0" max="1" step="0.05" value="${c.weight}" style="width:72px" onchange="updCrit(${c.id},{weight:parseFloat(this.value)})"></td>
+          <td><input type="checkbox" ${c.enabled?'checked':''} onchange="updCrit(${c.id},{enabled:this.checked?1:0})"></td>
+          <td><button class="btn btn-danger" style="padding:2px 7px;font-size:10px" onclick="delCrit(${c.id})">×</button></td>
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`;
   }).join('');
 }
 
-async function updateCriterion(cid, patch) {
-  await PUT(`/api/projects/${currentPid}/criteria/${cid}`, patch);
-  renderCriteria();
-}
-
-async function deleteCriterion(cid) {
-  if (!confirm('Удалить критерий и все его оценки?')) return;
-  await DEL(`/api/projects/${currentPid}/criteria/${cid}`);
-  toast('Критерий удалён');
-  renderCriteria();
-}
-
-async function normWeights() {
-  await POST(`/api/projects/${currentPid}/criteria/normalize`);
-  toast('Веса нормированы');
-  renderCriteria();
-}
-
-function addCriterionModal() { openModal('modal-add-criterion'); }
-async function createCriterion() {
-  const name   = document.getElementById('ac-name').value.trim();
-  const desc   = document.getElementById('ac-desc').value.trim();
-  const weight = parseFloat(document.getElementById('ac-weight').value);
-  const group  = document.getElementById('ac-group').value;
-  if (!name) { toast('Введите название', 'err'); return; }
-  await POST(`/api/projects/${currentPid}/criteria`, { name, description: desc, weight, group_name: group });
-  closeModal('modal-add-criterion');
+async function updCrit(cid,patch){await PUT(`/api/projects/${pid}/criteria/${cid}`,patch);renderCriteria()}
+async function delCrit(cid){if(!confirm('Удалить критерий?'))return;await DEL(`/api/projects/${pid}/criteria/${cid}`);toast('Удалено');renderCriteria()}
+async function normWeights(){await POST(`/api/projects/${pid}/criteria/normalize`);toast('Веса нормированы');renderCriteria()}
+async function createCrit(){
+  const name=document.getElementById('ac-name').value.trim();
+  const desc=document.getElementById('ac-desc').value.trim();
+  const w=parseFloat(document.getElementById('ac-w').value);
+  const g=document.getElementById('ac-grp').value;
+  if(!name){toast('Введите название','err');return}
+  await POST(`/api/projects/${pid}/criteria`,{name,description:desc,weight:w,group_name:g});
+  closeModal('mo-add-crit');
   toast('Критерий добавлен');
   renderCriteria();
 }
 
-// ── 3. SCORES ─────────────────────────────────────────────────────────────────
-let pendingScores = {};
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 3: ОЦЕНКИ — матрица модели × критерии
+   ════════════════════════════════════════════════════════════════ */
+let pending={};  // изменённые ячейки — копятся пока не нажата кнопка "Сохранить"
 
-async function renderScoresTable() {
-  pendingScores = {};
-  const [proj, scores] = await Promise.all([
-    GET(`/api/projects/${currentPid}`),
-    GET(`/api/projects/${currentPid}/scores`),
-  ]);
-  const models   = proj.models;
-  const criteria = proj.criteria.filter(c => c.enabled);
-  const wrap = document.getElementById('scores-table-wrap');
-
-  if (!models.length || !criteria.length) {
-    wrap.innerHTML = '<div class="empty">Добавьте модели и критерии</div>'; return;
+async function renderScores(){
+  pending={};
+  const[p,sc]=await Promise.all([GET(`/api/projects/${pid}`),GET(`/api/projects/${pid}/scores`)]);
+  const models=p.models;
+  const crit=p.criteria.filter(c=>c.enabled);
+  const wrap=document.getElementById('scores-wrap');
+  if(!models.length||!crit.length){
+    wrap.innerHTML='<div class="empty">Добавьте модели и критерии</div>';
+    return;
   }
+  // Превращаем массив оценок в карту {model_id_criterion_id: score}
+  const sm={};sc.forEach(s=>{sm[`${s.model_id}_${s.criterion_id}`]=s.score});
+  const groups={};crit.forEach(c=>{(groups[c.group_name]||=[]).push(c)});
+  const gl={accuracy:'Точность',robustness:'Устойчивость',context:'Контекст'};
 
-  const scoreMap = {};
-  scores.forEach(s => { scoreMap[`${s.model_id}_${s.criterion_id}`] = s.score; });
-
-  const groups = {};
-  criteria.forEach(c => { (groups[c.group_name] ||= []).push(c); });
-  const groupLabels = { accuracy: 'Точность', robustness: 'Устойчивость', context: 'Контекст' };
-
-  let thead = '<tr><th style="width:180px">Критерий</th>';
-  models.forEach(m => { thead += `<th style="text-align:center">${esc(m.name)}</th>`; });
-  thead += '</tr>';
-
-  let tbody = '';
-  Object.entries(groups).forEach(([g, clist]) => {
-    tbody += `<tr><td colspan="${models.length+1}" style="background:var(--bg3);font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);padding:8px 12px">${groupLabels[g]||g}</td></tr>`;
-    clist.forEach(c => {
-      tbody += `<tr><td><div style="font-size:12px">${esc(c.name)}</div><div style="font-size:10px;color:var(--muted)">w=${c.weight}</div></td>`;
-      models.forEach(m => {
-        const key = `${m.id}_${c.id}`;
-        const val = scoreMap[key] || '';
-        tbody += `<td style="text-align:center" class="${val ? 'score-cell-filled' : ''}">
-          <input type="number" min="1" max="5" step="0.1" value="${val}"
-            placeholder="—" class="score-table score-input"
-            data-model="${m.id}" data-crit="${c.id}"
-            onchange="pendingScores['${key}']={model_id:${m.id},criterion_id:${c.id},score:parseFloat(this.value)}">
+  let h=`<table><thead><tr><th style="min-width:160px">Критерий</th>`;
+  models.forEach(m=>{h+=`<th style="text-align:center;min-width:80px">${esc(m.name)}</th>`});
+  h+=`</tr></thead><tbody>`;
+  Object.entries(groups).forEach(([g,cl])=>{
+    h+=`<tr><td class="grp-hdr" colspan="${models.length+1}">${gl[g]||g}</td></tr>`;
+    cl.forEach(c=>{
+      h+=`<tr><td><div style="font-size:12px;font-weight:500">${esc(c.name)}</div><div style="font-size:10px;color:var(--muted)">w=${c.weight}</div></td>`;
+      models.forEach(m=>{
+        const k=`${m.id}_${c.id}`;const v=sm[k]||'';
+        h+=`<td style="text-align:center" class="${v?'score-filled':''}">
+          <input type="number" min="1" max="5" step="0.1" value="${v}" placeholder="—"
+            class="score-input" data-m="${m.id}" data-c="${c.id}"
+            onchange="pending['${k}']={model_id:${m.id},criterion_id:${c.id},score:parseFloat(this.value)}">
         </td>`;
-      });
-      tbody += '</tr>';
+      });h+=`</tr>`;
     });
   });
-
-  wrap.innerHTML = `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  h+=`</tbody></table>`;
+  wrap.innerHTML=h;
 }
 
-async function saveAllScores() {
-  const inputs = document.querySelectorAll('.score-input');
-  inputs.forEach(inp => {
-    const mid  = +inp.dataset.model;
-    const cid  = +inp.dataset.crit;
-    const val  = parseFloat(inp.value);
-    if (!isNaN(val) && val >= 1 && val <= 5) {
-      pendingScores[`${mid}_${cid}`] = { model_id: mid, criterion_id: cid, score: val };
-    }
+async function saveAllScores(){
+  document.querySelectorAll('.score-input').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    const m=+inp.dataset.m;
+    const c=+inp.dataset.c;
+    if(!isNaN(v)&&v>=1&&v<=5)pending[`${m}_${c}`]={model_id:m,criterion_id:c,score:v};
   });
-
-  if (!Object.keys(pendingScores).length) { toast('Нет изменений', 'err'); return; }
-  let saved = 0;
-  for (const s of Object.values(pendingScores)) {
-    await POST(`/api/projects/${currentPid}/scores`, s);
-    saved++;
-  }
-  pendingScores = {};
-  toast(`Сохранено ${saved} оценок`);
+  if(!Object.keys(pending).length){toast('Нет изменений','err');return}
+  let n=0;
+  for(const s of Object.values(pending)){await POST(`/api/projects/${pid}/scores`,s);n++}
+  pending={};
+  toast(`Сохранено ${n} оценок`);
 }
 
-async function importCSV(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const fd = new FormData();
-  fd.append('file', file);
-  const r = await fetch(`${API}/api/projects/${currentPid}/scores/import`, { method: 'POST', body: fd });
-  const d = await r.json();
-  toast(`Импортировано: ${d.imported}${d.errors?.length ? ` | Ошибок: ${d.errors.length}` : ''}`);
-  if (d.errors?.length) console.warn('CSV errors:', d.errors);
-  renderScoresTable();
-  input.value = '';
+async function importCSV(inp){
+  const f=inp.files[0];if(!f)return;
+  const fd=new FormData();fd.append('file',f);
+  const r=await fetch(`${API}/api/projects/${pid}/scores/import`,{method:'POST',body:fd});
+  const d=await r.json();
+  toast(`Импортировано: ${d.imported}${d.errors?.length?` | Ошибок: ${d.errors.length}`:''}`,d.errors?.length?'err':'ok');
+  if(d.errors?.length)console.warn(d.errors);
+  renderScores();
+  inp.value='';
 }
 
-function downloadCSVTemplate() {
-  if (!currentProj) return;
-  const rows = ['model_name,criterion_name,score'];
-  currentProj.models.forEach(m => {
-    currentProj.criteria.filter(c=>c.enabled).forEach(c => {
-      rows.push(`${m.name},${c.name},`);
-    });
-  });
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'scores_template.csv' });
+function dlTemplate(){
+  if(!proj)return;
+  const rows=['model_name,criterion_name,score'];
+  proj.models.forEach(m=>proj.criteria.filter(c=>c.enabled).forEach(c=>rows.push(`${m.name},${c.name},`)));
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})),download:'scores_template.csv'});
   a.click();
 }
 
-// ── 4. RESULTS ────────────────────────────────────────────────────────────────
-async function runCalculation() {
-  const btn = document.getElementById('calc-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Расчёт...';
-  try {
-    const data = await POST(`/api/projects/${currentPid}/calculate`);
-    renderResults(data, new Date().toISOString());
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 4: РАСЧЁТ K
+   ════════════════════════════════════════════════════════════════ */
+async function runCalc(){
+  const btn=document.getElementById('calc-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Расчёт...';
+  try{
+    const d=await POST(`/api/projects/${pid}/calculate`);
+    renderResults(d,new Date().toISOString());
     toast('Расчёт завершён');
     loadProjects();
-  } catch(e) {
-    toast(e.message, 'err');
-  } finally {
-    btn.disabled = false; btn.innerHTML = '▶ Запустить расчёт';
-  }
+  }catch(e){toast(e.message,'err')}
+  finally{btn.disabled=false;btn.innerHTML='▶ Запустить расчёт'}
 }
 
-function kColor(k) {
-  if (k >= 0.90) return 'var(--green)';
-  if (k >= 0.75) return 'var(--accent2)';
-  if (k >= 0.60) return 'var(--amber)';
-  return 'var(--red)';
-}
+function renderResults(data,ts){
+  document.getElementById('calc-ts').textContent='Обновлено: '+fdt(ts);
+  const sorted=Object.values(data).sort((a,b)=>a.rank-b.rank);
+  const gc={accuracy:'var(--accent-h)',robustness:'var(--green)',context:'var(--amber)'};
+  const gn={accuracy:'Точность',robustness:'Устойчивость',context:'Контекст'};
 
-function renderResults(data, ts) {
-  document.getElementById('calc-ts').textContent = `Рассчитано: ${fmtDate(ts)}`;
-  const sorted = Object.values(data).sort((a,b) => a.rank - b.rank);
-
-  let html = `<div class="card" style="margin-bottom:16px">
-    <h3>Рейтинг моделей</h3>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>#</th><th>Модель</th><th>Тип</th><th>K</th><th>S_k / S_max</th><th>Статус</th><th>Вклад по группам</th></tr></thead>
-      <tbody>${sorted.map(m => `<tr>
-        <td class="rank-${m.rank}" style="font-family:var(--mono);font-size:15px">${m.rank}</td>
-        <td><b>${esc(m.model_name)}</b></td>
-        <td><span class="badge badge-purple">${esc(m.model_type)}</span></td>
-        <td style="font-family:var(--mono);font-size:16px;font-weight:600;color:${kColor(m.k)}">${m.k.toFixed(4)}</td>
-        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${m.s_k.toFixed(3)} / ${m.s_max.toFixed(3)}</td>
-        <td><span class="badge ${m.k>=0.9?'badge-green':m.k>=0.75?'badge-blue':m.k>=0.6?'badge-amber':'badge-red'}">${esc(m.label)}</span></td>
-        <td style="min-width:200px">${renderGroupBars(m.groups)}</td>
+  // Главная таблица рейтинга
+  let h=`<div class="card" style="margin-bottom:14px">
+    <h3>Итоговый рейтинг</h3>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>Модель</th><th>Тип</th><th>K</th><th>S_k / S_max</th><th>Оценка</th><th style="min-width:220px">По группам</th></tr></thead>
+      <tbody>${sorted.map(m=>`<tr>
+        <td class="rk${m.rank}" style="font-family:var(--mono);font-size:16px">${m.rank}</td>
+        <td style="font-weight:600">${esc(m.model_name)}</td>
+        <td><span class="badge bp">${esc(m.model_type)}</span></td>
+        <td style="font-family:var(--mono);font-size:17px;font-weight:600;color:${kc(m.k)}">${m.k.toFixed(4)}</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${m.s_k.toFixed(3)} / ${m.s_max.toFixed(3)}</td>
+        <td>${kbadge(m.k,m.label)}</td>
+        <td>${gbars(m.groups,gc)}</td>
       </tr>`).join('')}</tbody>
     </table></div>
   </div>`;
 
-  // Detailed breakdown per model
-  sorted.forEach(m => {
-    html += `<div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
-        <span class="rank-${m.rank}" style="font-size:18px">№${m.rank}</span>
+  // Детальная разбивка по каждой модели
+  sorted.forEach(m=>{
+    h+=`<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+        <span class="rk${m.rank}" style="font-size:16px">№${m.rank}</span>
         <span style="font-size:15px;font-weight:600">${esc(m.model_name)}</span>
-        <span style="font-family:var(--mono);font-size:20px;font-weight:700;color:${kColor(m.k)}">K = ${m.k.toFixed(4)}</span>
-        <span class="badge ${m.k>=0.9?'badge-green':m.k>=0.75?'badge-blue':m.k>=0.6?'badge-amber':'badge-red'}">${esc(m.label)}</span>
+        <span class="knum" style="color:${kc(m.k)};font-size:22px">K = ${m.k.toFixed(4)}</span>
+        ${kbadge(m.k,m.label)}
       </div>
-      <div class="grid3">`;
-    const groupNames = { accuracy:'Точность', robustness:'Устойчивость', context:'Контекст' };
-    const groupColors = { accuracy:'var(--accent2)', robustness:'var(--green)', context:'var(--amber)' };
-    Object.entries(m.groups).forEach(([g, gd]) => {
-      html += `<div>
-        <div style="font-size:11px;color:${groupColors[g]||'var(--muted)'};font-weight:600;margin-bottom:6px">${groupNames[g]||g}</div>
-        <div style="font-family:var(--mono);font-size:18px;font-weight:600;color:${groupColors[g]||'var(--text)'}">${gd.k.toFixed(3)}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">S=${gd.s_k.toFixed(3)} / ${gd.s_max.toFixed(3)}</div>
-        <div style="margin-top:8px">${gd.criteria.map(c => `
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-            <span style="color:var(--muted)">${esc(c.criterion_name)}</span>
-            <span style="font-family:var(--mono);color:${c.score?'var(--text)':'var(--red)'}">${c.score ? c.score.toFixed(1) : '—'}</span>
+      <div class="g3">`;
+    Object.entries(m.groups).forEach(([g,gd])=>{
+      h+=`<div><div style="font-size:10px;color:${gc[g]};font-weight:600;margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase">${gn[g]||g}</div>
+        <div class="knum" style="font-size:20px;color:${gc[g]}">${gd.k.toFixed(3)}</div>
+        <div style="font-size:10px;color:var(--muted);margin:3px 0 10px">S=${gd.s_k.toFixed(3)} / ${gd.s_max.toFixed(3)}</div>
+        ${gd.criteria.map(c=>`
+          <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+            <span style="color:var(--muted2)">${esc(c.criterion_name)}</span>
+            <span style="font-family:var(--mono);color:${c.score?'var(--text)':'var(--red)'}">${c.score?c.score.toFixed(1):'—'}</span>
           </div>
-          <div class="progress" style="margin-bottom:4px">
-            <div class="progress-fill" style="width:${c.score?c.score/5*100:0}%;background:${groupColors[g]||'var(--accent)'}"></div>
-          </div>`).join('')}
-        </div>
+          <div class="prog" style="margin-bottom:4px"><div class="prog-fill" style="width:${c.score?c.score/5*100:0}%;background:${gc[g]}"></div></div>
+        `).join('')}
       </div>`;
     });
-    html += `</div></div>`;
+    h+=`</div></div>`;
   });
-
-  document.getElementById('results-content').innerHTML = html;
+  document.getElementById('results-body').innerHTML=h;
 }
 
-function renderGroupBars(groups) {
-  const c = { accuracy:'var(--accent2)', robustness:'var(--green)', context:'var(--amber)' };
-  return Object.entries(groups).map(([g, gd]) =>
-    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-      <span style="font-size:9px;width:24px;color:${c[g]}">${g.slice(0,3)}</span>
-      <div class="progress" style="flex:1"><div class="progress-fill" style="width:${gd.k*100}%;background:${c[g]}"></div></div>
-      <span style="font-size:10px;font-family:var(--mono);width:36px;text-align:right;color:${c[g]}">${gd.k.toFixed(2)}</span>
-    </div>`
-  ).join('');
+function gbars(groups,gc){
+  return Object.entries(groups).map(([g,gd])=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+      <span style="font-size:9px;width:22px;color:${gc[g]};text-transform:uppercase">${g.slice(0,3)}</span>
+      <div class="prog" style="flex:1"><div class="prog-fill" style="width:${gd.k*100}%;background:${gc[g]}"></div></div>
+      <span style="font-size:10px;font-family:var(--mono);width:34px;text-align:right;color:${gc[g]}">${gd.k.toFixed(2)}</span>
+    </div>`).join('');
 }
 
-// ── 5. ANALYTICS ──────────────────────────────────────────────────────────────
-async function loadAnalytics() {
-  let d;
-  try { d = await GET(`/api/projects/${currentPid}/results`); }
-  catch { document.getElementById('analytics-content').innerHTML = '<div class="empty">Сначала запустите расчёт</div>'; return; }
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 5: МАТЕМАТИКА — формулы + пошаговый расчёт
+   ════════════════════════════════════════════════════════════════ */
+async function renderMath(){
+  const el=document.getElementById('math-body');
+  // Постоянная часть — формулы из ТЗ
+  let html=`
+    <div class="card" style="margin-bottom:14px">
+      <h3>Математическая модель оценки</h3>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:10px">
+        Для каждой модели рассчитывается интегральный коэффициент качества K в диапазоне [0..1]
+        на основе взвешенной суммы оценок по критериям. Это позволяет сравнивать модели по
+        набору разнородных метрик с учётом важности каждой.
+      </p>
 
-  const results = Object.values(d.results).sort((a,b) => a.rank - b.rank);
-  const el = document.getElementById('analytics-content');
-
-  el.innerHTML = `
-    <div class="grid2" style="margin-bottom:16px">
-      <div class="card"><h3>Интегральный показатель K</h3><canvas id="chart-bar" height="220"></canvas></div>
-      <div class="card"><h3>Вклад групп критериев</h3><canvas id="chart-stacked" height="220"></canvas></div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>Радар по группам</h3><canvas id="chart-radar" height="260"></canvas></div>
-      <div class="card"><h3>Отчёт</h3><div id="report-content"><div class="empty">Загрузка...</div></div></div>
-    </div>`;
-
-  const labels = results.map(m => m.model_name);
-  const palette = ['#7c6ff7','#3ecf8e','#fbbf24','#60a5fa','#f87171'];
-
-  // Destroy old charts
-  Object.values(chartInstances).forEach(c => c.destroy());
-  chartInstances = {};
-
-  // Bar chart
-  chartInstances.bar = new Chart(document.getElementById('chart-bar'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'K', data: results.map(m => m.k),
-        backgroundColor: results.map((m,i) => palette[i % palette.length]),
-        borderRadius: 6, borderSkipped: false }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { min: 0, max: 1, ticks: { color: '#6b7599', font: { family: 'DM Mono', size: 11 } }, grid: { color: '#2a2f45' } },
-        x: { ticks: { color: '#6b7599' }, grid: { display: false } },
-      },
-    },
-  });
-
-  // Stacked bar
-  const gGroups = ['accuracy','robustness','context'];
-  const gColors = { accuracy:'#7c6ff7', robustness:'#3ecf8e', context:'#fbbf24' };
-  const gNames  = { accuracy:'Точность', robustness:'Устойчивость', context:'Контекст' };
-  chartInstances.stacked = new Chart(document.getElementById('chart-stacked'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: gGroups.map(g => ({
-        label: gNames[g], backgroundColor: gColors[g],
-        data: results.map(m => m.groups[g] ? parseFloat((m.groups[g].k * (g === 'accuracy' ? 0.4 : g === 'robustness' ? 0.35 : 0.25)).toFixed(4)) : 0),
-      })),
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#6b7599', boxWidth: 10, font: { size: 11 } } } },
-      scales: {
-        x: { stacked: true, ticks: { color: '#6b7599' }, grid: { display: false } },
-        y: { stacked: true, min: 0, max: 1, ticks: { color: '#6b7599' }, grid: { color: '#2a2f45' } },
-      },
-    },
-  });
-
-  // Radar
-  chartInstances.radar = new Chart(document.getElementById('chart-radar'), {
-    type: 'radar',
-    data: {
-      labels: ['Точность', 'Устойчивость', 'Контекст'],
-      datasets: results.map((m, i) => ({
-        label: m.model_name,
-        data: gGroups.map(g => m.groups[g]?.k || 0),
-        borderColor: palette[i % palette.length],
-        backgroundColor: palette[i % palette.length] + '22',
-        pointBackgroundColor: palette[i % palette.length],
-        borderWidth: 2,
-      })),
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#6b7599', boxWidth: 10, font: { size: 11 } } } },
-      scales: { r: { min: 0, max: 1,
-        ticks: { color: '#6b7599', backdropColor: 'transparent', stepSize: 0.25 },
-        grid: { color: '#2a2f45' },
-        pointLabels: { color: '#e2e6f0', font: { size: 12 } },
-      }},
-    },
-  });
-
-  // Report
-  GET(`/api/projects/${currentPid}/report`).then(rep => {
-    document.getElementById('report-content').innerHTML = `
-      <div class="report-winner">
-        <div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Рекомендуется</div>
-          <div style="font-size:16px;font-weight:600">${esc(rep.winner.name)}</div>
-          <div class="badge badge-green" style="margin-top:6px">${esc(rep.winner.label)}</div>
-        </div>
-        <div class="k-score">${rep.winner.k.toFixed(4)}</div>
+      <div class="formula-block">
+        <div class="formula-name">1. Взвешенная сумма оценок модели k</div>
+        <div class="formula">S<sub>k</sub> = Σ (w<sub>i</sub> × a<sub>ik</sub>)</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px">${esc(rep.recommendation)}</div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">ИТОГОВЫЙ РЕЙТИНГ</div>
-      ${rep.ranking.map(r => `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <span class="rank-${r.rank}" style="font-family:var(--mono);min-width:20px">#${r.rank}</span>
-          <span style="flex:1;font-size:12px">${esc(r.name)}</span>
-          <span style="font-family:var(--mono);font-size:12px;color:${kColor(r.k)}">${r.k.toFixed(4)}</span>
-        </div>`).join('')}`;
-  }).catch(() => {});
-}
 
-// ── 6. COMPARISON & SENSITIVITY ──────────────────────────────────────────────
-async function loadComparison() {
-  let d;
-  try { d = await GET(`/api/projects/${currentPid}/results`); }
-  catch { document.getElementById('comparison-content').innerHTML = '<div class="empty">Сначала запустите расчёт</div>'; return; }
+      <div class="formula-block">
+        <div class="formula-name">2. Максимально возможная сумма</div>
+        <div class="formula">S<sub>max</sub> = <b>5</b> × Σ w<sub>i</sub></div>
+      </div>
 
-  const results  = Object.values(d.results).sort((a,b) => a.rank - b.rank);
-  const criteria = await GET(`/api/projects/${currentPid}/criteria`);
-  const el = document.getElementById('comparison-content');
+      <div class="formula-block">
+        <div class="formula-name">3. Интегральный коэффициент качества</div>
+        <div class="formula">K<sub>k</sub> = S<sub>k</sub> / S<sub>max</sub>   →   <b>[0 ... 1]</b></div>
+      </div>
 
-  el.innerHTML = `
-    <div class="card" style="margin-bottom:16px">
-      <h3>Сравнение моделей по критериям</h3>
-      <div class="tbl-wrap" id="comp-table"></div>
+      <h3 style="margin-top:18px">Обозначения</h3>
+      <dl class="def-list">
+        <dt>k</dt><dd>индекс модели (1, 2, ..., s)</dd>
+        <dt>i</dt><dd>индекс критерия (1, 2, ..., n)</dd>
+        <dt>w<sub>i</sub></dt><dd>вес i-го критерия (важность), задаётся пользователем</dd>
+        <dt>a<sub>ik</sub></dt><dd>оценка k-й модели по i-му критерию по шкале 1–5</dd>
+        <dt>S<sub>k</sub></dt><dd>взвешенная сумма оценок для модели k</dd>
+        <dt>S<sub>max</sub></dt><dd>максимально возможная сумма (при всех оценках = 5)</dd>
+        <dt>K<sub>k</sub></dt><dd>итоговый коэффициент качества модели в диапазоне [0..1]</dd>
+      </dl>
     </div>
-    <div class="card">
+
+    <div class="card" style="margin-bottom:14px">
+      <h3>Интерпретация значения K (5 градаций по ТЗ)</h3>
+      <div class="k-interpret-row" style="background:var(--green-bg)">
+        <span class="k-range" style="color:var(--green)">0.90 — 1.00</span>
+        <span>Отличная модель — рекомендуется к применению</span>
+      </div>
+      <div class="k-interpret-row" style="background:var(--blue-bg)">
+        <span class="k-range" style="color:var(--blue)">0.75 — 0.89</span>
+        <span>Хорошая модель — подходит для большинства задач</span>
+      </div>
+      <div class="k-interpret-row" style="background:var(--amber-bg)">
+        <span class="k-range" style="color:var(--amber)">0.60 — 0.74</span>
+        <span>Приемлемая модель — требуется доработка или ограниченное применение</span>
+      </div>
+      <div class="k-interpret-row" style="background:rgba(245,166,35,.05)">
+        <span class="k-range" style="color:var(--amber)">0.40 — 0.59</span>
+        <span>Слабая модель — необходима настройка или замена</span>
+      </div>
+      <div class="k-interpret-row" style="background:var(--red-bg)">
+        <span class="k-range" style="color:var(--red)">0.00 — 0.39</span>
+        <span>Модель не рекомендуется к применению</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
       <h3>Анализ чувствительности</h3>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap">
-        <div class="form-group">
-          <label>Критерий</label>
-          <select id="sens-crit" style="min-width:200px">
-            ${criteria.filter(c=>c.enabled).map(c => `<option value="${c.id}">${esc(c.name)} (w=${c.weight})</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group"><label>Δ вес</label><input id="sens-delta" type="number" min="0.01" max="0.5" step="0.05" value="0.1" style="width:80px"></div>
-        <button class="btn btn-primary" onclick="runSensitivity()">▶ Анализ</button>
+      <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:10px">
+        Показывает, насколько устойчив выбор лидера к изменению весов критериев.
+        При увеличении w<sub>i</sub> на Δ система пересчитывает все K<sub>k</sub> и
+        сравнивает новый рейтинг с базовым.
+      </p>
+      <div class="formula-block">
+        <div class="formula-name">Изменение K при изменении веса</div>
+        <div class="formula">ΔK<sub>k</sub> / Δw<sub>i</sub> = a<sub>ik</sub> / S<sub>max</sub></div>
       </div>
-      <div id="sens-result"></div>
-    </div>`;
+    </div>
+  `;
 
-  // Comparison table
-  const enabledCrit = criteria.filter(c => c.enabled);
-  let html = `<table><thead><tr><th>Критерий</th>`;
-  results.forEach(m => { html += `<th style="text-align:center">${esc(m.model_name)}</th>`; });
-  html += '</tr></thead><tbody>';
+  // Пошаговый расчёт — только если выбран проект и есть результаты
+  try{
+    const d=await GET(`/api/projects/${pid}/results`);
+    const results=Object.values(d.results).sort((a,b)=>a.rank-b.rank);
+    html+=`<div class="card">
+      <h3>Пошаговый расчёт для текущего проекта</h3>
+      <p style="font-size:12px;color:var(--muted2);margin-bottom:14px">
+        Развёрнутый расчёт K для каждой модели — все промежуточные шаги формулы.
+      </p>`;
+    results.forEach(m=>{
+      html+=`<div style="margin-bottom:18px;padding:14px;background:var(--bg3);border-radius:var(--r2);border-left:3px solid ${kc(m.k)}">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+          <span class="rk${m.rank}" style="font-size:14px">№${m.rank}</span>
+          <span style="font-size:14px;font-weight:600">${esc(m.model_name)}</span>
+        </div>`;
+      // Раскладываем S_k = w1·a1 + w2·a2 + ...
+      const allCrit=[];
+      Object.values(m.groups).forEach(gd=>gd.criteria.forEach(c=>{if(c.score!==null)allCrit.push(c)}));
+      const terms=allCrit.map(c=>`${c.weight}×${c.score.toFixed(1)}`).join(' + ');
+      html+=`<div class="math-step">
+        <span class="ms-num">Шаг 1.</span>
+        <span class="ms-calc">S<sub>k</sub> = ${terms}</span><br>
+        <span style="margin-left:50px">= <span class="ms-result">${m.s_k.toFixed(4)}</span></span>
+      </div>`;
+      const wTerms=allCrit.map(c=>c.weight).join(' + ');
+      html+=`<div class="math-step">
+        <span class="ms-num">Шаг 2.</span>
+        <span class="ms-calc">S<sub>max</sub> = 5 × (${wTerms})</span><br>
+        <span style="margin-left:50px">= 5 × ${(m.s_max/5).toFixed(4)} = <span class="ms-result">${m.s_max.toFixed(4)}</span></span>
+      </div>`;
+      html+=`<div class="math-step">
+        <span class="ms-num">Шаг 3.</span>
+        <span class="ms-calc">K<sub>k</sub> = S<sub>k</sub> / S<sub>max</sub> = ${m.s_k.toFixed(4)} / ${m.s_max.toFixed(4)}</span><br>
+        <span style="margin-left:50px">= <span class="ms-result" style="font-size:14px;color:${kc(m.k)}">${m.k.toFixed(4)}</span>  →  ${esc(m.label)}</span>
+      </div>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }catch{
+    html+=`<div class="card"><h3>Пошаговый расчёт</h3><div class="empty" style="padding:20px">Запустите расчёт на вкладке «Расчёт K» чтобы увидеть детальный пример</div></div>`;
+  }
 
-  enabledCrit.forEach(c => {
-    html += `<tr><td style="font-size:12px">${esc(c.name)}<br><span style="color:var(--muted);font-size:10px">w=${c.weight}</span></td>`;
-    const allScores = results.map(m => {
-      const gd = m.groups[c.group_name];
-      if (!gd) return null;
-      const cd = gd.criteria.find(x => x.criterion_id === c.id);
-      return cd?.score ?? null;
-    });
-    const maxScore = Math.max(...allScores.filter(s => s !== null));
-    results.forEach((m, i) => {
-      const s = allScores[i];
-      const isMax = s === maxScore && s !== null;
-      html += `<td style="text-align:center">
-        ${s !== null
-          ? `<div style="font-family:var(--mono);font-size:13px;color:${isMax?'var(--green)':'var(--text)'}${isMax?';font-weight:700':''}">${s.toFixed(1)}</div>
-             <div class="progress" style="margin-top:4px"><div class="progress-fill" style="width:${s/5*100}%;background:${isMax?'var(--green)':'var(--accent)'}"></div></div>`
-          : `<span style="color:var(--muted)">—</span>`}
-      </td>`;
-    });
-    html += '</tr>';
-  });
-  html += `<tr style="background:var(--bg3)"><td style="font-weight:600;font-size:12px;color:var(--accent2)">ИТОГО K</td>`;
-  results.forEach(m => {
-    html += `<td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${kColor(m.k)}">${m.k.toFixed(4)}</td>`;
-  });
-  html += '</tr></tbody></table>';
-  document.getElementById('comp-table').innerHTML = html;
+  el.innerHTML=html;
 }
 
-async function runSensitivity() {
-  const cid   = +document.getElementById('sens-crit').value;
-  const delta = +document.getElementById('sens-delta').value;
-  const el = document.getElementById('sens-result');
-  el.innerHTML = '<span class="loader"></span>';
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 6: ЛОКАЛЬНОЕ ТЕСТИРОВАНИЕ
+   ════════════════════════════════════════════════════════════════ */
+function renderTestingTab(){
+  if(!proj)return;
 
-  try {
-    const r = await POST(`/api/projects/${currentPid}/sensitivity`, { criterion_id: cid, delta });
-    const models = Object.values(r.models).sort((a,b) => b.baseline_k - a.baseline_k);
-    const palette = ['#7c6ff7','#3ecf8e','#fbbf24','#60a5fa','#f87171'];
+  // ── YOLO-чипы: только detection-модели ──
+  const yoloModels=proj.models.filter(m=>m.model_type==='detection'||m.name.startsWith('YOLO'));
+  const yoloEl=document.getElementById('test-models-list');
+  yoloEl.innerHTML=yoloModels.length
+    ? yoloModels.map(m=>`
+        <div class="test-model-chip" data-model="${esc(m.name)}" onclick="this.classList.toggle('checked')">
+          <span>${esc(m.name)}</span>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:11px">В проекте нет YOLO-моделей. Добавь их на вкладке «Проект».</div>';
 
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px;background:var(--bg3);border-radius:var(--radius)">
-        <div>
-          <div style="font-size:12px;color:var(--muted)">При Δw = +${delta}</div>
-          <div style="font-size:13px;margin-top:2px">
-            ${r.leader_changed
-              ? `<span style="color:var(--amber)">⚠ Лидер сменился:</span> ${esc(r.baseline_leader)} → <b>${esc(r.new_leader)}</b>`
-              : `<span style="color:var(--green)">✓ Лидер стабилен:</span> <b>${esc(r.baseline_leader)}</b>`}
-          </div>
-        </div>
-      </div>
-      ${models.map((m, i) => {
-        const maxDelta = Math.max(...models.map(x => Math.abs(x.delta)));
-        const barW = maxDelta > 0 ? Math.abs(m.delta) / maxDelta * 100 : 0;
-        return `<div class="sens-row">
-          <div style="width:140px;font-size:12px">${esc(m.model_name)}</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--muted);width:55px">${m.baseline_k.toFixed(4)}</div>
-          <div class="sens-bar-wrap">
-            <div class="sens-bar" style="width:${barW}%;background:${m.delta > 0 ? 'var(--green)' : 'var(--red)'}"></div>
-          </div>
-          <div style="font-family:var(--mono);font-size:12px;width:55px;text-align:right;color:var(--muted)">${m.new_k.toFixed(4)}</div>
-          <div style="font-family:var(--mono);font-size:11px;width:55px;text-align:right;color:${m.delta > 0 ? 'var(--green)' : 'var(--red)'}">
-            ${m.delta > 0 ? '+' : ''}${m.delta.toFixed(4)}
-          </div>
-        </div>`;
-      }).join('')}`;
-  } catch(e) {
-    el.innerHTML = `<div style="color:var(--red)">${e.message}</div>`;
+  // ── NLP-чипы: только text-модели из NLP_MODEL_REGISTRY ──
+  const knownNlp=['rubert-tiny2','rubert-base','roberta-sentiment','distilbert-ru'];
+  const nlpModels=proj.models.filter(m=>m.model_type==='text'&&knownNlp.includes(m.name));
+  const nlpEl=document.getElementById('test-nlp-models-list');
+  nlpEl.innerHTML=nlpModels.length
+    ? nlpModels.map(m=>`
+        <div class="test-model-chip test-nlp-chip" data-model="${esc(m.name)}" onclick="this.classList.toggle('checked')">
+          <span>${esc(m.name)}</span>
+          ${m.description?`<span style="font-size:9px;color:var(--muted);margin-left:2px">${esc(m.description.split(' ')[0])}</span>`:''}
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:11px">В проекте нет NLP-моделей из реестра (rubert-tiny2, rubert-base, roberta-sentiment, distilbert-ru).</div>';
+}
+
+async function startTest(){
+  // YOLO: собираем выбранные .test-model-chip (не NLP)
+  const selected=Array.from(document.querySelectorAll('#test-models-list .test-model-chip.checked'))
+    .map(el=>el.dataset.model);
+  if(!selected.length){toast('Выбери хотя бы одну YOLO-модель','err');return}
+
+  const btn=document.getElementById('test-start-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"></span> Запуск...';
+  try{
+    const r=await POST(`/api/projects/${pid}/test/start`,{model_names:selected});
+    pollTestStatus(r.job_id,'yolo');
+  }catch(e){
+    toast(e.message,'err');
+    btn.disabled=false;
+    btn.innerHTML='▶ Запустить YOLO-тест';
   }
 }
 
-// ── MODALS ────────────────────────────────────────────────────────────────────
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-function openNewProject() { openModal('modal-new-project'); }
-async function createProject() {
-  const name = document.getElementById('np-name').value.trim();
-  const desc = document.getElementById('np-desc').value.trim();
-  if (!name) { toast('Введите название', 'err'); return; }
-  const proj = await POST('/api/projects', { name, description: desc });
-  closeModal('modal-new-project');
-  document.getElementById('np-name').value = '';
-  document.getElementById('np-desc').value = '';
+async function startNlpTest(){
+  // NLP: собираем выбранные .test-nlp-chip
+  const selected=Array.from(document.querySelectorAll('#test-nlp-models-list .test-model-chip.checked'))
+    .map(el=>el.dataset.model);
+  if(!selected.length){toast('Выбери хотя бы одну NLP-модель','err');return}
+
+  const btn=document.getElementById('test-nlp-start-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"></span> Запуск...';
+  try{
+    const r=await POST(`/api/projects/${pid}/test/nlp/start`,{model_names:selected});
+    pollTestStatus(r.job_id,'nlp');
+  }catch(e){
+    toast(e.message,'err');
+    btn.disabled=false;
+    btn.innerHTML='▶ Запустить NLP-тест';
+  }
+}
+
+function pollTestStatus(jobId, testType='yolo'){
+  // Останавливаем предыдущий поллинг
+  if(testPollInterval)clearInterval(testPollInterval);
+
+  const wrap=document.getElementById('test-progress-wrap');
+  wrap.style.display='block';
+
+  const update=async()=>{
+    try{
+      const j=await GET(`/api/test/${jobId}`);
+      renderTestProgress(j);
+      if(j.status==='done'||j.status==='error'){
+        clearInterval(testPollInterval);
+        // Восстанавливаем кнопки
+        const yoloBtn=document.getElementById('test-start-btn');
+        const nlpBtn=document.getElementById('test-nlp-start-btn');
+        if(yoloBtn){yoloBtn.disabled=false;yoloBtn.innerHTML='▶ Запустить YOLO-тест'}
+        if(nlpBtn){nlpBtn.disabled=false;nlpBtn.innerHTML='▶ Запустить NLP-тест'}
+        if(j.status==='done'){
+          toast('Тестирование завершено. Оценки записаны.');
+          selectProject(pid);
+        }else{
+          toast('Ошибка тестирования. Смотри лог.','err');
+        }
+      }
+    }catch(e){console.error(e)}
+  };
+  testPollInterval=setInterval(update,500);
+  update();
+}
+
+function renderTestProgress(j){
+  const eta=j.eta_seconds;
+  const etaStr=eta>0?(eta>=60?`${Math.floor(eta/60)}м ${Math.round(eta%60)}с`:`${Math.round(eta)}с`):'—';
+  const statusColor=j.status==='done'?'var(--green)':j.status==='error'?'var(--red)':'var(--accent)';
+  const statusText={pending:'Подготовка',running:'Выполняется',done:'Завершено',error:'Ошибка'}[j.status]||j.status;
+
+  document.getElementById('test-progress-wrap').innerHTML=`
+    <div class="test-progress-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <h3 style="margin:0;color:${statusColor}">${statusText}</h3>
+        <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:${statusColor}">${j.progress}%</span>
+      </div>
+      <div class="big-prog">
+        <div class="big-prog-fill" style="width:${j.progress}%"></div>
+      </div>
+      <div class="test-stats">
+        <div class="test-stat">
+          <div class="test-stat-label">Прогресс</div>
+          <div class="test-stat-val" style="color:var(--accent-h)">${j.progress}%</div>
+        </div>
+        <div class="test-stat">
+          <div class="test-stat-label">Осталось времени</div>
+          <div class="test-stat-val" style="color:var(--amber)">${etaStr}</div>
+        </div>
+        <div class="test-stat">
+          <div class="test-stat-label">Статус</div>
+          <div class="test-stat-val" style="font-size:13px;color:${statusColor};padding-top:3px">${statusText}</div>
+        </div>
+      </div>
+      <div class="test-log">${esc(j.log||'Ожидание лога...')}</div>
+    </div>
+  `;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 7: АНАЛИТИКА — графики Chart.js
+   ════════════════════════════════════════════════════════════════ */
+async function loadAnalytics(){
+  let d;
+  try{d=await GET(`/api/projects/${pid}/results`)}
+  catch{document.getElementById('analytics-body').innerHTML='<div class="empty"><div class="ei">📈</div>Сначала запустите расчёт</div>';return}
+  const results=Object.values(d.results).sort((a,b)=>a.rank-b.rank);
+  const el=document.getElementById('analytics-body');
+
+  el.innerHTML=`
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><h3>Интегральный показатель K</h3><div style="position:relative;height:220px"><canvas id="ch-bar"></canvas></div></div>
+      <div class="card"><h3>Вклад групп критериев</h3><div style="position:relative;height:220px"><canvas id="ch-stack"></canvas></div></div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="card"><h3>Радар по группам критериев</h3><div style="position:relative;height:260px"><canvas id="ch-radar"></canvas></div></div>
+      <div class="card" id="rep-card"><h3>Финальный отчёт</h3><div id="rep-body"><div class="empty">Загрузка...</div></div></div>
+    </div>`;
+
+  // Уничтожаем старые графики (Chart.js требует destroy при обновлении)
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const pal=['#6c63ff','#2dd4a0','#f5a623','#5ba3f5','#f06060'];
+  const labels=results.map(m=>m.model_name);
+
+  // Bar chart — K по моделям
+  charts.bar=new Chart(document.getElementById('ch-bar'),{type:'bar',
+    data:{labels,datasets:[{label:'K',data:results.map(m=>m.k),
+      backgroundColor:results.map((_,i)=>pal[i%pal.length]),borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:1,ticks:{color:'#5a6280',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e2335'}},
+              x:{ticks:{color:'#5a6280',font:{size:11}},grid:{display:false}}}}});
+
+  // Stacked bar — вклад групп
+  const gg=['accuracy','robustness','context'];
+  const gc={'accuracy':'#6c63ff','robustness':'#2dd4a0','context':'#f5a623'};
+  const gn={'accuracy':'Точность','robustness':'Устойчивость','context':'Контекст'};
+  charts.stack=new Chart(document.getElementById('ch-stack'),{type:'bar',
+    data:{labels,datasets:gg.map(g=>({label:gn[g],backgroundColor:gc[g],
+      data:results.map(m=>m.groups[g]?+(m.groups[g].k*(g==='accuracy'?.4:g==='robustness'?.35:.25)).toFixed(4):0)}))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7b85a8',boxWidth:10,font:{size:10}}}},
+      scales:{x:{stacked:true,ticks:{color:'#5a6280'},grid:{display:false}},
+              y:{stacked:true,min:0,max:1,ticks:{color:'#5a6280',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e2335'}}}}});
+
+  // Radar — профиль модели по трём осям
+  charts.radar=new Chart(document.getElementById('ch-radar'),{type:'radar',
+    data:{labels:['Точность','Устойчивость','Контекст'],
+      datasets:results.map((m,i)=>({label:m.model_name,
+        data:gg.map(g=>m.groups[g]?.k||0),
+        borderColor:pal[i%pal.length],backgroundColor:pal[i%pal.length]+'22',
+        pointBackgroundColor:pal[i%pal.length],borderWidth:2,pointRadius:3}))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7b85a8',boxWidth:10,font:{size:10}}}},
+      scales:{r:{min:0,max:1,
+        ticks:{color:'#5a6280',backdropColor:'transparent',stepSize:.25,font:{family:'IBM Plex Mono',size:10}},
+        grid:{color:'#1e2335'},angleLines:{color:'#1e2335'},
+        pointLabels:{color:'#dde2f0',font:{size:12}}}}}});
+
+  // Финальный отчёт — отдельный запрос
+  GET(`/api/projects/${pid}/report`).then(rep=>{
+    document.getElementById('rep-body').innerHTML=`
+      <div class="winner-card">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase">Рекомендуется</div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:6px">${esc(rep.winner.name)}</div>
+          ${kbadge(rep.winner.k,rep.winner.label)}
+        </div>
+        <div class="knum" style="font-size:32px;color:var(--accent-h)">${rep.winner.k.toFixed(4)}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);line-height:1.7;margin-bottom:14px">${esc(rep.recommendation)}</div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">Итоговый рейтинг</div>
+      ${rep.ranking.map(r=>`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span class="rk${r.rank}" style="font-family:var(--mono);min-width:18px;font-size:13px">#${r.rank}</span>
+          <span style="flex:1;font-size:12px">${esc(r.name)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${kc(r.k)}">${r.k.toFixed(4)}</span>
+        </div>`).join('')}`;
+  }).catch(()=>{});
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ВКЛАДКА 8: СРАВНЕНИЕ + АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ
+   ════════════════════════════════════════════════════════════════ */
+async function loadComparison(){
+  let d;
+  try{d=await GET(`/api/projects/${pid}/results`)}
+  catch{document.getElementById('comparison-body').innerHTML='<div class="empty"><div class="ei">🔬</div>Сначала запустите расчёт</div>';return}
+  const results=Object.values(d.results).sort((a,b)=>a.rank-b.rank);
+  const crit=await GET(`/api/projects/${pid}/criteria`);
+  const el=document.getElementById('comparison-body');
+
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <h3>Сравнительная таблица по критериям</h3>
+      <div class="tw" id="ctbl"></div>
+    </div>
+    <div class="card">
+      <h3>Анализ чувствительности</h3>
+      <div class="fr" style="margin-bottom:14px;flex-wrap:wrap">
+        <div class="fg"><label>Критерий</label>
+          <select id="s-crit" style="min-width:200px">
+            ${crit.filter(c=>c.enabled).map(c=>`<option value="${c.id}">${esc(c.name)} (w=${c.weight})</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg"><label>Δ вес (+)</label><input id="s-delta" type="number" min="0.01" max="0.5" step="0.05" value="0.1" style="width:80px"></div>
+        <button class="btn btn-accent" onclick="runSens()">▶ Анализ</button>
+      </div>
+      <div id="sens-out"></div>
+    </div>`;
+
+  // Сравнительная таблица — подсветка лучшего значения по каждому критерию
+  const ec=crit.filter(c=>c.enabled);
+  let h=`<table><thead><tr><th>Критерий</th>`;
+  results.forEach(m=>{h+=`<th style="text-align:center">${esc(m.model_name)}</th>`});
+  h+=`</tr></thead><tbody>`;
+  const gl={accuracy:'Точность',robustness:'Устойчивость',context:'Контекст'};
+  const gc2={accuracy:'var(--accent-h)',robustness:'var(--green)',context:'var(--amber)'};
+  const grp={};ec.forEach(c=>{(grp[c.group_name]||=[]).push(c)});
+  Object.entries(grp).forEach(([g,cl])=>{
+    h+=`<tr><td class="grp-hdr" colspan="${results.length+1}" style="color:${gc2[g]}">${gl[g]||g}</td></tr>`;
+    cl.forEach(c=>{
+      const scores=results.map(m=>{
+        const gd=m.groups[c.group_name];if(!gd)return null;
+        return gd.criteria.find(x=>x.criterion_id===c.id)?.score??null;
+      });
+      const mx=Math.max(...scores.filter(s=>s!==null));
+      h+=`<tr><td style="font-size:11px">${esc(c.name)}<br><span style="color:var(--muted);font-size:10px">w=${c.weight}</span></td>`;
+      scores.forEach(s=>{
+        const best=s===mx&&s!==null;
+        h+=`<td style="text-align:center">
+          ${s!==null?`<div style="font-family:var(--mono);font-size:13px;font-weight:${best?'700':'400'};color:${best?'var(--green)':'var(--text)'}">${s.toFixed(1)}</div>
+          <div class="prog" style="margin-top:3px"><div class="prog-fill" style="width:${s/5*100}%;background:${best?'var(--green)':gc2[c.group_name]}"></div></div>`
+          :`<span style="color:var(--muted)">—</span>`}
+        </td>`;
+      });
+      h+=`</tr>`;
+    });
+  });
+  h+=`<tr style="background:var(--bg3)"><td style="font-weight:600;font-size:11px;color:var(--accent-h)">ИТОГО K</td>`;
+  results.forEach(m=>{h+=`<td style="text-align:center;font-family:var(--mono);font-size:16px;font-weight:700;color:${kc(m.k)}">${m.k.toFixed(4)}</td>`});
+  h+=`</tr></tbody></table>`;
+  document.getElementById('ctbl').innerHTML=h;
+}
+
+async function runSens(){
+  const cid=+document.getElementById('s-crit').value;
+  const delta=+document.getElementById('s-delta').value;
+  const el=document.getElementById('sens-out');
+  el.innerHTML='<span class="spin"></span>';
+  try{
+    const r=await POST(`/api/projects/${pid}/sensitivity`,{criterion_id:cid,delta});
+    const models=Object.values(r.models).sort((a,b)=>b.baseline_k-a.baseline_k);
+    const maxD=Math.max(...models.map(x=>Math.abs(x.delta)));
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:var(--r2);margin-bottom:14px;border:1px solid ${r.leader_changed?'rgba(245,166,35,.3)':'rgba(45,212,160,.3)'}">
+        <div style="font-size:20px">${r.leader_changed?'⚠':'✓'}</div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">При Δw = +${delta}</div>
+          <div style="font-size:13px;font-weight:500;color:${r.leader_changed?'var(--amber)':'var(--green)'}">
+            ${r.leader_changed?`Лидер сменился: ${esc(r.baseline_leader)} → <b>${esc(r.new_leader)}</b>`:`Лидер стабилен: <b>${esc(r.baseline_leader)}</b>`}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;margin-bottom:6px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase">
+        <span style="width:130px">Модель</span><span style="width:52px">Было</span><span style="flex:1">Изменение</span><span style="width:52px;text-align:right">Стало</span><span style="width:52px;text-align:right">Δ</span>
+      </div>
+      ${models.map(m=>{
+        const bw=maxD>0?Math.abs(m.delta)/maxD*100:0;
+        return`<div class="sens-row">
+          <span style="width:130px;font-size:12px;font-weight:500">${esc(m.model_name)}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);width:52px">${m.baseline_k.toFixed(4)}</span>
+          <div class="sens-bar-wrap"><div class="sens-bar" style="width:${bw}%;background:${m.delta>=0?'var(--green)':'var(--red)'}"></div></div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);width:52px;text-align:right">${m.new_k.toFixed(4)}</span>
+          <span style="font-family:var(--mono);font-size:11px;width:52px;text-align:right;color:${m.delta>=0?'var(--green)':'var(--red)'}">${m.delta>=0?'+':''}${m.delta.toFixed(4)}</span>
+        </div>`;
+      }).join('')}`;
+  }catch(e){el.innerHTML=`<div style="color:var(--red)">${e.message}</div>`}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   МОДАЛКИ И ИНИЦИАЛИЗАЦИЯ
+   ════════════════════════════════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')}));
+
+async function createProject(){
+  const name=document.getElementById('np-name').value.trim();
+  const desc=document.getElementById('np-desc').value.trim();
+  if(!name){toast('Введите название','err');return}
+  const p=await POST('/api/projects',{name,description:desc});
+  closeModal('mo-new-proj');
+  document.getElementById('np-name').value='';
+  document.getElementById('np-desc').value='';
   toast('Проект создан');
   await loadProjects();
-  selectProject(proj.id);
+  selectProject(p.id);
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function fmtDate(s) {
-  if (!s) return '—';
-  return new Date(s.endsWith('Z') ? s : s + 'Z').toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// Старт: загружаем проекты в сайдбар, показываем главную
 loadProjects();
+goHome();
 </script>
 </body>
 </html>
