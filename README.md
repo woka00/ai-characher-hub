@@ -199,26 +199,6 @@ Full Swagger docs: **http://localhost:8000/docs**
 | ML | ultralytics, torch, transformers (optional) |
 | Deploy | Single command, runs on any laptop |
 
----
-
-## Contributing
-
-Contributions are welcome! Here's how to get started:
-
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/ai-characher-hub`
-3. Create a branch: `git checkout -b feature/your-feature-name`
-4. Install dependencies and run locally (see Quick Start)
-5. Make your changes and commit with a descriptive message
-6. Push your branch and open a Pull Request against `main`
-
-Please make sure your code runs without errors before submitting a PR.
-
----
-
-## License
-
-Open source. Free to use, modify, and distribute.
 
 ---
 
@@ -434,13 +414,3 @@ Swagger: **http://localhost:8000/docs**
 | Запуск | Одна команда, работает на любом ноутбуке |
 
 ---
-
-## Contributing
-
-Форкай, создавай ветку, делай PR в `main`. Подробнее — в [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
-
-## Лицензия
-
-Открытый код. Свободно используй, модифицируй и распространяй.
