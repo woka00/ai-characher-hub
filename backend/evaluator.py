@@ -1,5 +1,5 @@
 """
-evaluator.py — Automatic model evaluation engine
+evaluator.py - Automatic model evaluation engine
 Runs YOLO, image classifiers, and text sentiment models,
 then converts raw metrics into scores [1..5] for the platform.
 
@@ -11,7 +11,7 @@ import httpx
 
 API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 
-# ── Score converters ─────────────────────────────────────────────────────────
+# -- Score converters ---------------------------------------------------------
 def fps_to_score(fps: float) -> float:
     if fps >= 30: return 5.0
     if fps >= 15: return 4.0
@@ -50,7 +50,7 @@ def noise_stability_to_score(base_det: int, noise_det: int) -> float:
     if ratio >= 0.35: return 2.0
     return 1.0
 
-# ── YOLO evaluator ────────────────────────────────────────────────────────────
+# -- YOLO evaluator ------------------------------------------------------------
 def evaluate_yolo():
     """
     Returns dict: model_name -> {criterion_name -> score}
@@ -134,7 +134,7 @@ def evaluate_yolo():
 
     return results
 
-# ── Image classifier evaluator ────────────────────────────────────────────────
+# -- Image classifier evaluator ------------------------------------------------
 def evaluate_classifiers():
     """
     Requires: pip install torch torchvision pillow
@@ -223,7 +223,7 @@ def evaluate_classifiers():
 
     return results
 
-# ── Text sentiment evaluator ──────────────────────────────────────────────────
+# -- Text sentiment evaluator --------------------------------------------------
 def evaluate_text_models():
     """
     Requires: pip install transformers torch
@@ -281,7 +281,7 @@ def evaluate_text_models():
 
     return results
 
-# ── Push scores to API ────────────────────────────────────────────────────────
+# -- Push scores to API --------------------------------------------------------
 def push_scores(project_id: int, eval_results: dict):
     with httpx.Client(base_url=API_BASE) as client:
         proj = client.get(f"/api/projects/{project_id}").json()
@@ -307,7 +307,7 @@ def push_scores(project_id: int, eval_results: dict):
 
         print(f"  Pushed {pushed} scores, skipped {skipped} models")
 
-# ── CLI ────────────────────────────────────────────────────────────────────────
+# -- CLI ------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AI Model Evaluator")
     parser.add_argument("--project_id", type=int, required=True)

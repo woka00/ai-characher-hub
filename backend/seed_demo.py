@@ -1,5 +1,5 @@
 """
-seed_demo.py — Two realistic demo projects for the defense.
+seed_demo.py - Two realistic demo projects for the defense.
 Run this BEFORE your presentation.
 
 Usage:

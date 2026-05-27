@@ -1,33 +1,33 @@
 """
-================================================================═══
-AI CharacherHub — Платформа комплексной оценки моделей искусственного интеллекта
-================================================================═══
+===================================================================
+AI CharacherHub - Платформа комплексной оценки моделей искусственного интеллекта
+===================================================================
 Backend: FastAPI + SQLite. Запускается одной командой `python main.py`.
 При первом запуске автоматически наполняется демо-данными.
 
 Архитектура:
-  - main.py             — этот файл, REST API + математическая модель + auto-seed
-  - evaluator.py        — автоматический прогон моделей через CLI
-  - seed_demo.py        — ручной перезапуск seed (не нужен если используется auto-seed)
-  - models/detection/   — папка с весами YOLO (.pt файлы)
-  - models/nlp/         — папка-кэш для HuggingFace NLP-моделей
+  - main.py             - этот файл, REST API + математическая модель + auto-seed
+  - evaluator.py        - автоматический прогон моделей через CLI
+  - seed_demo.py        - ручной перезапуск seed (не нужен если используется auto-seed)
+  - models/detection/   - папка с весами YOLO (.pt файлы)
+  - models/nlp/         - папка-кэш для HuggingFace NLP-моделей
 
 Структура данных в БД (SQLite):
-  projects     — проекты оценки (1 проект = 1 задача сравнения моделей)
-  ai_models    — модели в рамках проекта
-  criteria     — критерии оценки (с весами и группой)
-  scores       — оценки модели по критерию (шкала 1–5)
-  results      — история расчётов K_k
-  test_jobs    — задания на локальное тестирование моделей (новое в v2.0)
+  projects     - проекты оценки (1 проект = 1 задача сравнения моделей)
+  ai_models    - модели в рамках проекта
+  criteria     - критерии оценки (с весами и группой)
+  scores       - оценки модели по критерию (шкала 1-5)
+  results      - история расчётов K_k
+  test_jobs    - задания на локальное тестирование моделей (новое в v2.0)
 
 Математическая модель (формулы из ТЗ):
-  S_k   = Σ(w_i × a_ik)     — взвешенная сумма по модели k
-  S_max = 5 × Σ(w_i)         — максимально возможная сумма
-  K_k   = S_k / S_max         — итоговый коэффициент качества [0..1]
-================================================================═══
+  S_k   = sum(w_i * a_ik)     - взвешенная сумма по модели k
+  S_max = 5 * sum(w_i)         - максимально возможная сумма
+  K_k   = S_k / S_max         - итоговый коэффициент качества [0..1]
+===================================================================
 """
 
-# ── Импорты ─────────────────────────────────────────────────────────────────
+# -- Импорты -----------------------------------------------------------------
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -37,7 +37,7 @@ from pathlib import Path
 import sqlite3, json, csv, io, os, uuid, time, threading, zipfile, shutil, re
 
 # ================================================================
-# КОНСТАНТЫ — ПУТИ К ПАПКАМ МОДЕЛЕЙ
+# КОНСТАНТЫ - ПУТИ К ПАПКАМ МОДЕЛЕЙ
 # ================================================================
 # Эти переменные определяют откуда берутся и куда сохраняются модели.
 # При необходимости переопределяй здесь или через переменные окружения.
@@ -67,16 +67,16 @@ YOLO_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 NLP_MODELS_DIR.mkdir(parents=True, exist_ok=True)
 DATASETS_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Инициализация FastAPI ───────────────────────────────────────────────────
+# -- Инициализация FastAPI ---------------------------------------------------
 app = FastAPI(title="AI CharacherHub", version="2.0.0", docs_url="/docs")
-# CORS разрешён для всех источников — для удобства разработки
+# CORS разрешён для всех источников - для удобства разработки
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # DB_PATH определён выше в блоке констант
 
 
 # ================================================================
-# СЛОЙ ДАННЫХ — работа с SQLite
+# СЛОЙ ДАННЫХ - работа с SQLite
 # ================================================================
 
 def get_conn():
@@ -118,7 +118,7 @@ def init_db():
                 group_name  TEXT    NOT NULL DEFAULT 'accuracy',
                 enabled     INTEGER NOT NULL DEFAULT 1
             );
-            -- Оценки: одна оценка на пару (модель, критерий), шкала 1–5
+            -- Оценки: одна оценка на пару (модель, критерий), шкала 1-5
             CREATE TABLE IF NOT EXISTS scores (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
                 model_id     INTEGER NOT NULL REFERENCES ai_models(id)  ON DELETE CASCADE,
@@ -150,7 +150,7 @@ init_db()  # инициализация при старте
 
 
 # ================================================================
-# СХЕМЫ ВАЛИДАЦИИ (Pydantic) — защита API от некорректных данных
+# СХЕМЫ ВАЛИДАЦИИ (Pydantic) - защита API от некорректных данных
 # ================================================================
 
 # Символы, запрещённые в названиях (защита от XSS и SQL-injection)
@@ -198,7 +198,7 @@ class CriterionUpdate(APIModel):
 class ScoreSet(APIModel):
     model_id:     int
     criterion_id: int
-    score:        float = Field(..., ge=1.0, le=5.0)  # шкала ТЗ: 1–5
+    score:        float = Field(..., ge=1.0, le=5.0)  # шкала ТЗ: 1-5
 
 class SensitivityRequest(APIModel):
     criterion_id: int
@@ -208,12 +208,12 @@ class TestStartRequest(APIModel):
     """Запрос на запуск локального тестирования YOLO / NLP."""
     model_names: List[str]
     # Имя кастомного датасета из DATASETS_DIR (опционально).
-    # Если None — используются встроенные тестовые данные.
+    # Если None - используются встроенные тестовые данные.
     dataset: Optional[str] = None
 
 
 # ================================================================
-# МАТЕМАТИЧЕСКАЯ МОДЕЛЬ — расчёт коэффициента качества K_k
+# МАТЕМАТИЧЕСКАЯ МОДЕЛЬ - расчёт коэффициента качества K_k
 # ================================================================
 
 def interpret_k(k: float) -> str:
@@ -228,8 +228,8 @@ def interpret_k(k: float) -> str:
 def calculate_k(project_id: int, conn) -> dict:
     """
     ОСНОВНАЯ ФОРМУЛА из ТЗ:
-        S_k   = Σ(w_i × a_ik)
-        S_max = 5 × Σ(w_i)
+        S_k   = sum(w_i * a_ik)
+        S_max = 5 * sum(w_i)
         K_k   = S_k / S_max
     Возвращает результаты с детализацией по группам критериев для UI.
     """
@@ -242,8 +242,8 @@ def calculate_k(project_id: int, conn) -> dict:
 
     results = {}
     for model in models:
-        s_k = 0.0          # числитель — взвешенная сумма
-        s_max = 0.0        # знаменатель — макс. возможная сумма
+        s_k = 0.0          # числитель - взвешенная сумма
+        s_max = 0.0        # знаменатель - макс. возможная сумма
         group_details = {}
 
         # Считаем отдельно по каждой группе для красивой визуализации
@@ -260,7 +260,7 @@ def calculate_k(project_id: int, conn) -> dict:
                     (model['id'], c['id'])
                 ).fetchone()
                 score        = row['score'] if row else None
-                # Вклад критерия: w_i × a_ik
+                # Вклад критерия: w_i * a_ik
                 contribution = (c['weight'] * score) if score is not None else 0.0
                 g_s_k  += contribution
                 s_k    += contribution
@@ -274,7 +274,7 @@ def calculate_k(project_id: int, conn) -> dict:
                     "contribution_pct": 0,
                 })
 
-            # K для группы — для радарной диаграммы
+            # K для группы - для радарной диаграммы
             group_details[g] = {
                 "k":      round(g_s_k / g_s_max, 4) if g_s_max > 0 else 0.0,
                 "s_k":    round(g_s_k, 4),
@@ -357,7 +357,7 @@ def validate_project_exists(pid: int, conn):
 
 
 # ================================================================
-# API РОУТЫ — Проекты
+# API РОУТЫ - Проекты
 # ================================================================
 
 @app.get("/api/projects")
@@ -430,7 +430,7 @@ def delete_project(pid: int):
     return {"ok": True}
 
 
-# ── Модели ───────────────────────────────────────────────────────────────────
+# -- Модели -------------------------------------------------------------------
 @app.get("/api/projects/{pid}/models")
 def list_models(pid: int):
     with get_conn() as conn:
@@ -453,7 +453,7 @@ def delete_model(pid: int, mid: int):
     return {"ok": True}
 
 
-# ── Критерии ─────────────────────────────────────────────────────────────────
+# -- Критерии -----------------------------------------------------------------
 @app.get("/api/projects/{pid}/criteria")
 def list_criteria(pid: int):
     with get_conn() as conn:
@@ -473,7 +473,7 @@ def add_criterion(pid: int, data: CriterionCreate):
 
 @app.put("/api/projects/{pid}/criteria/{cid}")
 def update_criterion(pid: int, cid: int, data: CriterionUpdate):
-    """Частичное обновление — только переданные поля."""
+    """Частичное обновление - только переданные поля."""
     updates = {k: v for k, v in data.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(400, "Nothing to update")
@@ -508,7 +508,7 @@ def normalize_weights(pid: int):
     return {"ok": True}
 
 
-# ── Оценки ───────────────────────────────────────────────────────────────────
+# -- Оценки -------------------------------------------------------------------
 @app.get("/api/projects/{pid}/scores")
 def get_scores(pid: int):
     """Все оценки с именами моделей и критериев."""
@@ -581,7 +581,7 @@ async def import_csv(pid: int, file: UploadFile = File(...)):
     return {"imported": imported, "errors": errors}
 
 
-# ── Расчёт и результаты ──────────────────────────────────────────────────────
+# -- Расчёт и результаты ------------------------------------------------------
 @app.post("/api/projects/{pid}/calculate")
 def run_calculation(pid: int):
     """Запустить расчёт K_k и сохранить в историю."""
@@ -616,7 +616,7 @@ def sensitivity(pid: int, data: SensitivityRequest):
         return result
 
 
-# ── Отчёт ────────────────────────────────────────────────────────────────────
+# -- Отчёт --------------------------------------------------------------------
 @app.get("/api/projects/{pid}/report")
 def get_report(pid: int):
     """Финальный отчёт с текстовой рекомендацией по результатам."""
@@ -682,19 +682,19 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
     Алгоритм:
     1. Для каждой модели:
        - Загружаем веса (скачиваются автоматически с GitHub если их нет,
-         либо берутся из YOLO_MODELS_DIR — например, загруженные через drag-and-drop)
+         либо берутся из YOLO_MODELS_DIR - например, загруженные через drag-and-drop)
        - Прогоняем на изображениях: встроенные ultralytics ASSETS либо
          кастомный датасет из DATASETS_DIR/<dataset>/images/
        - На каждой картинке: чистый прогон + прогон с гауссовым шумом
        - Собираем метрики: confidence, FPS, размер модели, устойчивость к шуму
-    2. Нормируем сырые метрики в оценки 1–5
+    2. Нормируем сырые метрики в оценки 1-5
     3. Сохраняем оценки в БД через UPSERT
 
     Прогресс обновляется после каждого изображения,
     ETA считается линейной экстраполяцией прошедшего времени.
     """
     try:
-        # Импорт ленивый — если ultralytics не стоит, выдаём понятную ошибку
+        # Импорт ленивый - если ultralytics не стоит, выдаём понятную ошибку
         try:
             from ultralytics import YOLO
             from ultralytics.utils import ASSETS
@@ -738,7 +738,7 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                 log_lines.append(f'\n[{model_name}] Загрузка модели...')
                 _update_job(job_id, log='\n'.join(log_lines), status='running')
 
-                # Сопоставляем имя модели → файл весов (.pt)
+                # Сопоставляем имя модели -> файл весов (.pt)
                 # Модели хранятся в YOLO_MODELS_DIR (backend/models/detection/)
                 # При первом обращении ultralytics сам скачает веса с GitHub
                 # и положит их в текущую директорию; мы принудительно
@@ -749,8 +749,8 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                     'YOLOv8m': 'yolov8m.pt',
                     'YOLOv8l': 'yolov8l.pt',
                     'YOLOv8x': 'yolov8x.pt',
-                    # YOLOv9 — добавь сюда: 'YOLOv9c': 'yolov9c.pt'
-                    # YOLOv10 — добавь сюда: 'YOLOv10n': 'yolov10n.pt'
+                    # YOLOv9 - добавь сюда: 'YOLOv9c': 'yolov9c.pt'
+                    # YOLOv10 - добавь сюда: 'YOLOv10n': 'yolov10n.pt'
                 }
                 weight_filename = weight_map.get(model_name, f'{model_name.lower()}.pt')
                 # Полный путь до файла весов в нашей папке
@@ -768,7 +768,7 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                     img = cv2.imread(str(img_path))
                     if img is None: continue
 
-                    # ── Этап 1: чистый прогон → точность и скорость ──
+                    # -- Этап 1: чистый прогон -> точность и скорость --
                     t0 = time.time()
                     r = model(img, verbose=False)[0]
                     times.append(time.time() - t0)
@@ -779,11 +779,11 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                     current_step += 1
                     elapsed = time.time() - start_time
                     progress = int(current_step / total_steps * 100)
-                    # ETA = (среднее время на шаг) × (осталось шагов)
+                    # ETA = (среднее время на шаг) * (осталось шагов)
                     eta = (elapsed / current_step * (total_steps - current_step)) if current_step > 0 else 0
                     _update_job(job_id, progress=progress, eta_seconds=round(eta, 1))
 
-                    # ── Этап 2: прогон с гауссовым шумом → устойчивость ──
+                    # -- Этап 2: прогон с гауссовым шумом -> устойчивость --
                     noise = np.clip(img.astype(np.int16) + np.random.normal(0, 30, img.shape), 0, 255).astype(np.uint8)
                     r_noise = model(noise, verbose=False)[0]
                     noise_detections.append(len(r_noise.boxes))
@@ -793,7 +793,7 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                     eta = (elapsed / current_step * (total_steps - current_step)) if current_step > 0 else 0
                     _update_job(job_id, progress=progress, eta_seconds=round(eta, 1))
 
-                # ── Агрегированные метрики ──
+                # -- Агрегированные метрики --
                 avg_conf = sum(confs) / len(confs) if confs else 0
                 avg_fps  = 1 / (sum(times) / len(times)) if times else 0
                 avg_base = sum(base_detections) / max(len(base_detections), 1)
@@ -807,17 +807,17 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                     # Возвращаем рабочую директорию обратно
                     os.chdir(_prev_dir)
 
-                # ── НОРМИРОВКА метрик в шкалу 1–5 ──
-                # FPS → пороговая шкала
+                # -- НОРМИРОВКА метрик в шкалу 1-5 --
+                # FPS -> пороговая шкала
                 speed_score = (5.0 if avg_fps >= 30 else 4.0 if avg_fps >= 15
                                else 3.0 if avg_fps >= 5 else 2.0 if avg_fps >= 2 else 1.0)
-                # Confidence в [0..1] → умножаем на 5
+                # Confidence в [0..1] -> умножаем на 5
                 acc_score = round(avg_conf * 5, 2)
                 # Устойчивость = ratio детекций при шуме / без шума
                 noise_ratio = avg_noise / max(avg_base, 1)
                 robust_score = (5.0 if noise_ratio >= 0.9 else 4.0 if noise_ratio >= 0.75
                                 else 3.0 if noise_ratio >= 0.55 else 2.0 if noise_ratio >= 0.35 else 1.0)
-                # Размер модели → меньше = лучше
+                # Размер модели -> меньше = лучше
                 size_score = (5.0 if size_mb < 10 else 4.0 if size_mb < 30
                               else 3.0 if size_mb < 80 else 2.0)
 
@@ -842,7 +842,7 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
                 log_lines.append(f'  ✗ Ошибка {model_name}: {e}')
                 _update_job(job_id, log='\n'.join(log_lines))
 
-        # ── Записываем оценки в БД ──
+        # -- Записываем оценки в БД --
         with get_conn() as conn:
             crit_map = {x['name']: x['id'] for x in conn.execute(
                 "SELECT id,name FROM criteria WHERE project_id=?", (project_id,)).fetchall()}
@@ -874,7 +874,7 @@ def _yolo_test_worker(job_id: str, project_id: int, model_names: list, dataset: 
 def start_test(pid: int, req: TestStartRequest):
     """
     Запустить локальное тестирование YOLO-моделей детекции.
-    Возвращает job_id — фронтенд опрашивает /api/test/{job_id} для прогресса.
+    Возвращает job_id - фронтенд опрашивает /api/test/{job_id} для прогресса.
     """
     job_id = str(uuid.uuid4())
     with get_conn() as conn:
@@ -919,26 +919,26 @@ NLP_TEST_TEXTS = [
     ("Нормально, ничего особенного, ожидал большего.", "neu"),
     ("Рекомендую всем! Превзошло все мои ожидания!", "pos"),
     ("Брак, сломалось через неделю, не советую никому.", "neg"),
-    # Тексты с шумом — опечатки, сленг (для теста устойчивости)
+    # Тексты с шумом - опечатки, сленг (для теста устойчивости)
     ("оч крутая штука, всем советую взять!!!", "pos"),
     ("хрень полная, выбросил сразу", "neg"),
     ("Ну так, норм в принципе если не придираться", "neu"),
 ]
 
-# Маппинг HuggingFace label → наша категория pos/neg/neu
+# Маппинг HuggingFace label -> наша категория pos/neg/neu
 _LABEL_MAP = {
     'POSITIVE': 'pos', 'NEGATIVE': 'neg', 'NEUTRAL': 'neu',
     'LABEL_0': 'neg', 'LABEL_1': 'neu', 'LABEL_2': 'pos',  # 3-class
     'positive': 'pos', 'negative': 'neg', 'neutral': 'neu',
 }
 
-# Поддерживаемые NLP-модели → HuggingFace model id
+# Поддерживаемые NLP-модели -> HuggingFace model id
 NLP_MODEL_REGISTRY = {
     'rubert-tiny2':        'cointegrated/rubert-tiny2',
     'rubert-base':         'blanchefort/rubert-base-cased-sentiment',
     'roberta-sentiment':   'cardiffnlp/twitter-roberta-base-sentiment-latest',
     'distilbert-ru':       'Tatyana/distilbert-base-multilingual-cased-sentiments-student',
-    # Чтобы добавить новую модель — просто добавь строку:
+    # Чтобы добавить новую модель - просто добавь строку:
     # 'мой-ярлык': 'huggingface/model-id',
 }
 
@@ -947,7 +947,7 @@ def _load_nlp_test_texts(dataset: Optional[str]) -> list:
     """
     Возвращает список (text, expected_label) для NLP-тестирования.
     Если dataset указан и файл DATASETS_DIR/<dataset>/texts.csv существует,
-    загружает оттуда; иначе — встроенный NLP_TEST_TEXTS.
+    загружает оттуда; иначе - встроенный NLP_TEST_TEXTS.
     """
     if not dataset:
         return NLP_TEST_TEXTS
@@ -975,12 +975,12 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
 
     Алгоритм:
     1. Для каждой модели сначала проверяем локальную папку NLP_MODELS_DIR/<имя>/.
-       Если есть config.json — грузим оттуда (offline). Иначе берём из реестра
+       Если есть config.json - грузим оттуда (offline). Иначе берём из реестра
        NLP_MODEL_REGISTRY и качаем через HuggingFace.
     2. Прогоняем тестовые тексты (встроенные либо из dataset/texts.csv).
-       Каждый текст — в оригинале + в CAPS (имитация шума).
+       Каждый текст - в оригинале + в CAPS (имитация шума).
     3. Считаем: accuracy (верных предсказаний), confidence, скорость, размер.
-    4. Нормируем в шкалу 1–5 и записываем через UPSERT в таблицу scores.
+    4. Нормируем в шкалу 1-5 и записываем через UPSERT в таблицу scores.
     """
     try:
         try:
@@ -1009,7 +1009,7 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                 model_source = str(local_dir)
                 source_label = f'локально ({local_dir.name})'
             else:
-                # 2) Иначе — HuggingFace из реестра
+                # 2) Иначе - HuggingFace из реестра
                 hf_model_id = NLP_MODEL_REGISTRY.get(model_name)
                 if not hf_model_id:
                     log_lines.append(f'  ✗ {model_name}: не найден локально и не в NLP_MODEL_REGISTRY')
@@ -1033,7 +1033,7 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                 times, confs, correct, robust_correct = [], [], 0, 0
 
                 for text, expected_label in test_texts:
-                    # ── Чистый прогон ──
+                    # -- Чистый прогон --
                     t0 = time.time()
                     out = pipe(text)[0]
                     times.append(time.time() - t0)
@@ -1042,7 +1042,7 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                     if predicted == expected_label:
                         correct += 1
 
-                    # ── Зашумлённый текст: ALL CAPS ──
+                    # -- Зашумлённый текст: ALL CAPS --
                     noisy = text.upper()
                     out_n = pipe(noisy)[0]
                     pred_n = _LABEL_MAP.get(out_n['label'].upper(), 'neu')
@@ -1055,7 +1055,7 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                     eta = (elapsed / current_step * (total_steps - current_step)) if current_step > 0 else 0
                     _update_job(job_id, progress=progress, eta_seconds=round(eta, 1))
 
-                # ── Агрегированные метрики ──
+                # -- Агрегированные метрики --
                 n = len(test_texts)
                 accuracy   = correct / n         # доля верных ответов [0..1]
                 robustness = robust_correct / n  # то же на зашумлённых
@@ -1068,8 +1068,8 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                 except:
                     params_m = 100  # fallback
 
-                # ── Нормировка в шкалу 1–5 ──
-                acc_score    = round(accuracy * 5, 2)      # 100% → 5.0
+                # -- Нормировка в шкалу 1-5 --
+                acc_score    = round(accuracy * 5, 2)      # 100% -> 5.0
                 conf_score   = round(avg_conf * 5, 2)
                 robust_score = round(robustness * 5, 2)
                 # Скорость: <50мс=5, <150мс=4, <400мс=3, <800мс=2, >800мс=1
@@ -1103,7 +1103,7 @@ def _nlp_test_worker(job_id: str, project_id: int, model_names: list, dataset: O
                 log_lines.append(f'  ✗ Ошибка {model_name}: {e}')
                 _update_job(job_id, log='\n'.join(log_lines))
 
-        # ── Записываем оценки в БД ──
+        # -- Записываем оценки в БД --
         with get_conn() as conn:
             crit_map = {x['name']: x['id'] for x in conn.execute(
                 "SELECT id,name FROM criteria WHERE project_id=?", (project_id,)).fetchall()}
@@ -1135,8 +1135,8 @@ def start_nlp_test(pid: int, req: TestStartRequest):
     """
     Запустить локальное тестирование NLP-моделей.
     Модели грузятся либо локально (NLP_MODELS_DIR/<имя>/), либо из реестра.
-    Если req.dataset указан — используются тексты из DATASETS_DIR/<dataset>/texts.csv.
-    Возвращает job_id — фронтенд опрашивает /api/test/{job_id} для прогресса.
+    Если req.dataset указан - используются тексты из DATASETS_DIR/<dataset>/texts.csv.
+    Возвращает job_id - фронтенд опрашивает /api/test/{job_id} для прогресса.
     """
     job_id = str(uuid.uuid4())
     with get_conn() as conn:
@@ -1155,7 +1155,7 @@ def start_nlp_test(pid: int, req: TestStartRequest):
 
 
 # ================================================================
-# UPLOAD ENDPOINTS — загрузка моделей и датасетов через drag-and-drop
+# UPLOAD ENDPOINTS - загрузка моделей и датасетов через drag-and-drop
 # ================================================================
 # Эндпоинты для загрузки .pt-весов YOLO, ZIP-архивов NLP-моделей и датасетов.
 # Файлы сохраняются в YOLO_MODELS_DIR / NLP_MODELS_DIR / DATASETS_DIR.
@@ -1196,7 +1196,7 @@ async def upload_yolo_model(file: UploadFile = File(...)):
     """
     Загрузка YOLO-весов (.pt файл).
     Сохраняется в YOLO_MODELS_DIR с санитизацией имени.
-    Возвращает {filename, size_mb, suggested_name} — suggested_name
+    Возвращает {filename, size_mb, suggested_name} - suggested_name
     можно использовать как имя модели в проекте (без .pt).
     """
     fname = _safe_name(file.filename or '')
@@ -1252,7 +1252,7 @@ async def upload_nlp_model(file: UploadFile = File(...)):
                     raise HTTPException(400, f"Опасный путь в архиве: {member}")
             zf.extractall(target_dir)
 
-        # Иногда архив содержит вложенную папку — раскладываем содержимое наверх
+        # Иногда архив содержит вложенную папку - раскладываем содержимое наверх
         contents = list(target_dir.iterdir())
         if len(contents) == 1 and contents[0].is_dir():
             inner = contents[0]
@@ -1283,8 +1283,8 @@ async def upload_nlp_model(file: UploadFile = File(...)):
 async def upload_dataset(file: UploadFile = File(...), kind: str = "images"):
     """
     Загрузка пользовательского датасета.
-    kind="images" — ZIP с изображениями (.jpg/.png) для тестирования YOLO.
-    kind="texts"  — CSV с колонками text,label (label = pos/neg/neu) для NLP.
+    kind="images" - ZIP с изображениями (.jpg/.png) для тестирования YOLO.
+    kind="texts"  - CSV с колонками text,label (label = pos/neg/neu) для NLP.
 
     Структура после загрузки:
       datasets/<имя>/images/*.jpg          (для kind=images)
@@ -1303,7 +1303,7 @@ async def upload_dataset(file: UploadFile = File(...), kind: str = "images"):
     elif kind == "texts":
         if not fname.lower().endswith('.csv'):
             raise HTTPException(400, "Для kind=texts нужен .csv файл")
-        _check_size(file, 50)  # CSV маленькие — лимит 50МБ
+        _check_size(file, 50)  # CSV маленькие - лимит 50МБ
         ds_name = fname[:-4]
     else:
         raise HTTPException(400, "kind должен быть 'images' или 'texts'")
@@ -1437,7 +1437,7 @@ def delete_dataset(name: str):
 
 
 # ================================================================
-# AUTO-SEED — наполнение демо-данными при первом запуске
+# AUTO-SEED - наполнение демо-данными при первом запуске
 # ================================================================
 # Реалистичные оценки на основе публичных бенчмарков COCO/HuggingFace
 SCORES_DETECTION = {
@@ -1496,7 +1496,7 @@ def _seed_project(conn, name, desc, models_cfg, scores_data):
 
 
 def auto_seed_if_empty():
-    """Если БД пустая — наполнить демо-проектами."""
+    """Если БД пустая - наполнить демо-проектами."""
     with get_conn() as conn:
         count = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
         if count > 0:

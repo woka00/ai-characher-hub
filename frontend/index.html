@@ -16,9 +16,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
-/* ================================================================═══════
-   СТИЛИ — единая тёмная тема, переменные CSS для лёгкой смены палитры
-   ================================================================═══════ */
+/* =======================================================================
+   СТИЛИ - единая тёмная тема, переменные CSS для лёгкой смены палитры
+   ======================================================================= */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 /* Дизайн-токены: цвета фона, текста, акцентов, отступы */
@@ -46,12 +46,12 @@ body{min-height:100vh;display:flex;flex-direction:column}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-/* ── СЕТКА: сайдбар + основная область ── */
+/* -- СЕТКА: сайдбар + основная область -- */
 #app{display:flex;height:100vh;overflow:hidden}
 #sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
-/* ── САЙДБАР ── */
+/* -- САЙДБАР -- */
 .s-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .12s}
 .s-logo:hover{background:var(--bg3)}
 .s-logo-icon{width:28px;height:28px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
@@ -73,7 +73,7 @@ body{min-height:100vh;display:flex;flex-direction:column}
 .proj-k{font-family:var(--mono);font-size:10px;background:var(--bg);padding:1px 5px;border-radius:4px;flex-shrink:0;color:var(--accent-h)}
 .s-footer{padding:12px 8px;border-top:1px solid var(--border)}
 
-/* ── ТОПБАР с вкладками ── */
+/* -- ТОПБАР с вкладками -- */
 #topbar{height:46px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;background:var(--bg2)}
 #proj-title{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted2)}
 #proj-title span{color:var(--text)}
@@ -82,11 +82,11 @@ body{min-height:100vh;display:flex;flex-direction:column}
 .tab:hover{color:var(--text)}
 .tab.active{background:var(--accent);color:#fff}
 
-/* ── ОСНОВНОЙ КОНТЕНТ ── */
+/* -- ОСНОВНОЙ КОНТЕНТ -- */
 #content{flex:1;overflow-y:auto;padding:20px}
 .panel{display:none}.panel.active{display:block}
 
-/* ── КАРТОЧКИ ── */
+/* -- КАРТОЧКИ -- */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r3);padding:18px}
 .card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px}
 .card h3{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
@@ -94,11 +94,11 @@ body{min-height:100vh;display:flex;flex-direction:column}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 
-/* Статистика — крупные цифры */
+/* Статистика - крупные цифры */
 .stat-val{font-size:26px;font-weight:600;font-family:var(--mono);color:var(--text);line-height:1.1}
 .stat-label{font-size:10px;color:var(--muted);margin-top:5px;letter-spacing:.2px}
 
-/* ── ФОРМЫ ── */
+/* -- ФОРМЫ -- */
 .fg{display:flex;flex-direction:column;gap:4px}
 label{font-size:10px;font-weight:600;letter-spacing:.3px;color:var(--muted);text-transform:uppercase}
 input,select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:6px 10px;font-family:var(--sans);font-size:12px;outline:none;transition:border .12s;width:100%}
@@ -106,7 +106,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 select option{background:var(--bg2)}
 .fr{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 
-/* ── КНОПКИ ── */
+/* -- КНОПКИ -- */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);border:none;cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:600;transition:all .12s;white-space:nowrap;letter-spacing:.2px}
 .btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent-h)}
 .btn-ghost{background:var(--bg3);color:var(--muted2);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
@@ -114,7 +114,7 @@ select option{background:var(--bg2)}
 .btn-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,212,160,.2)}
 .btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
 
-/* ── ТАБЛИЦЫ ── */
+/* -- ТАБЛИЦЫ -- */
 .tw{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse}
 th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
@@ -122,7 +122,7 @@ td{padding:8px 12px;border-bottom:1px solid rgba(37,42,61,.7);font-size:12px;ver
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,.015)}
 
-/* ── БЕЙДЖИ ── */
+/* -- БЕЙДЖИ -- */
 .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.2px}
 .bg{background:var(--green-bg);color:var(--green)}
 .bb{background:var(--blue-bg);color:var(--blue)}
@@ -130,7 +130,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .br{background:var(--red-bg);color:var(--red)}
 .bp{background:var(--purple-bg);color:var(--purple)}
 
-/* ── ПРОГРЕСС-БАРЫ ── */
+/* -- ПРОГРЕСС-БАРЫ -- */
 .prog{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
 .prog-fill{height:100%;border-radius:2px;transition:width .5s ease}
 
@@ -139,20 +139,20 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .rk2{color:#c0c0c0;font-weight:600}
 .rk3{color:#cd7f32;font-weight:600}
 
-/* ── УВЕДОМЛЕНИЯ ── */
+/* -- УВЕДОМЛЕНИЯ -- */
 #toast{position:fixed;bottom:20px;right:20px;padding:9px 14px;border-radius:var(--r2);font-size:11px;font-weight:500;opacity:0;transform:translateY(6px);transition:all .2s;z-index:999;border:1px solid;max-width:280px;backdrop-filter:blur(8px)}
 #toast.show{opacity:1;transform:translateY(0)}
 #toast.ok{background:rgba(45,212,160,.12);border-color:rgba(45,212,160,.4);color:var(--green)}
 #toast.err{background:rgba(240,96,96,.12);border-color:rgba(240,96,96,.4);color:var(--red)}
 
-/* ── МОДАЛКИ ── */
+/* -- МОДАЛКИ -- */
 .mo{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:600;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(3px)}
 .mo.open{opacity:1;pointer-events:all}
 .mc{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:22px;width:400px;max-width:94vw}
 .mc h3{font-size:14px;font-weight:600;margin-bottom:16px}
 .mf{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 
-/* ── ЗАГРУЗЧИК (спиннер) ── */
+/* -- ЗАГРУЗЧИК (спиннер) -- */
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .5s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -162,26 +162,26 @@ tr:hover td{background:rgba(255,255,255,.015)}
 /* Карточка победителя в отчёте */
 .winner-card{background:linear-gradient(135deg,rgba(0, 0, 0, 0.526),rgba(255, 255, 255, 0.219));border:1px solid rgba(255, 177, 99, 0.3);border-radius:var(--r3);padding:20px;display:flex;align-items:center;gap:20px;margin-bottom:14px}
 
-/* ── АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ ── */
+/* -- АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ -- */
 .sens-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(61, 51, 37, 0.6)}
 .sens-bar-wrap{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
 .sens-bar{height:100%;border-radius:3px;transition:width .4s ease}
 
-/* ── ОЦЕНКИ — компактный инпут в таблице ── */
+/* -- ОЦЕНКИ - компактный инпут в таблице -- */
 .score-input{width:58px!important;padding:4px 6px!important;text-align:center;font-family:var(--mono);font-size:12px}
 .score-filled td{background:rgba(45,212,160,.03)}
 
 /* Заголовок группы в таблицах */
 .grp-hdr{background:var(--bg3);padding:7px 12px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
 
-/* ── ПУСТЫЕ СОСТОЯНИЯ ── */
+/* -- ПУСТЫЕ СОСТОЯНИЯ -- */
 .empty{padding:48px;text-align:center;color:var(--muted);font-size:13px}
 .empty .ei{font-size:36px;margin-bottom:8px;opacity:.5}
 .empty p{font-size:11px;margin-top:4px;color:var(--muted)}
 
-/* ================================================================══════
-   ВКЛАДКА "ГЛАВНАЯ" — описание проекта
-   ================================================================══════ */
+/* ======================================================================
+   ВКЛАДКА "ГЛАВНАЯ" - описание проекта
+   ====================================================================== */
 .hero{background:linear-gradient(135deg,rgba(255, 186, 75, 0.412),rgba(249, 133, 45, 0.462));border:1px solid rgba(0, 0, 0, 0.692);border-radius:var(--r3);padding:36px 28px;margin-bottom:18px}
 .hero h1{font-size:26px;font-weight:600;letter-spacing:-.5px;margin-bottom:10px;color:var(--text)}
 .hero h1 span{color:var(--text)}
@@ -198,9 +198,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .tab-info h5{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
 .tab-info p{font-size:11px;color:var(--muted2);line-height:1.5}
 
-/* ================================================================══════
-   ВКЛАДКА "МАТЕМАТИКА" — формулы и расчёты
-   ================================================================══════ */
+/* ======================================================================
+   ВКЛАДКА "МАТЕМАТИКА" - формулы и расчёты
+   ====================================================================== */
 .formula-block{background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin:12px 0;font-family:var(--mono);font-size:15px}
 .formula-block .formula-name{font-family:var(--sans);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .formula-block .formula{color:var(--accent-h);line-height:1.8}
@@ -218,9 +218,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .k-interpret-row{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:var(--r);margin-bottom:4px;font-size:12px}
 .k-interpret-row .k-range{font-family:var(--mono);font-weight:600;min-width:90px}
 
-/* ================================================================══════
-   ВКЛАДКА "ТЕСТИРОВАНИЕ" — локальный запуск моделей
-   ================================================================══════ */
+/* ======================================================================
+   ВКЛАДКА "ТЕСТИРОВАНИЕ" - локальный запуск моделей
+   ====================================================================== */
 .test-progress-card{background:linear-gradient(135deg,rgba(108,99,255,.08),rgba(45,212,160,.04));border:1px solid var(--accent);border-radius:var(--r3);padding:20px;margin-bottom:14px}
 .big-prog{height:14px;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin:14px 0}
 .big-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-h));border-radius:7px;transition:width .5s ease;position:relative;overflow:hidden}
@@ -239,9 +239,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .test-model-chip:hover{border-color:var(--border2);color:var(--text)}
 .test-model-chip.checked{background:var(--accent-glow);border-color:var(--accent);color:var(--accent-h)}
 
-/* ================================================================══════
-   DRAG-AND-DROP — зоны загрузки моделей и датасетов
-   ================================================================══════ */
+/* ======================================================================
+   DRAG-AND-DROP - зоны загрузки моделей и датасетов
+   ====================================================================== */
 .dropzone{border:2px dashed var(--border2);border-radius:var(--r2);padding:22px 18px;
   text-align:center;cursor:pointer;transition:all .15s;background:var(--bg3);position:relative}
 .dropzone:hover{border-color:var(--accent);background:rgba(255,169,99,.04)}
@@ -268,9 +268,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .upload-item .ui-del{background:none;border:none;color:var(--red);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:14px;opacity:.6;transition:opacity .12s}
 .upload-item .ui-del:hover{opacity:1;background:var(--red-bg)}
 
-/* ================================================================══════
-   ВКЛАДКА "МЕТРИКИ" — описание критериев оценки
-   ================================================================══════ */
+/* ======================================================================
+   ВКЛАДКА "МЕТРИКИ" - описание критериев оценки
+   ====================================================================== */
 .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);
   padding:16px 18px;margin-bottom:10px;border-left:3px solid var(--accent)}
 .metric-card.g-accuracy{border-left-color:var(--accent-h)}
@@ -306,7 +306,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .group-header.g-robustness .gh-divider{color:var(--green)}
 .group-header.g-context .gh-divider{color:var(--amber)}
 
-/* Печать — стилизация для PDF */
+/* Печать - стилизация для PDF */
 @media print{
   #sidebar,#topbar,.no-print{display:none!important}
   #main{overflow:visible}#content{overflow:visible;padding:0}
@@ -319,9 +319,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 <body>
 <div id="app">
 
-<!-- ================================================================═══
+<!-- ===================================================================
      САЙДБАР: логотип, кнопка "Главная", список проектов
-     ================================================================═══ -->
+     =================================================================== -->
 <div id="sidebar">
   <div class="s-logo" onclick="goHome()">
     <div class="s-logo-icon">⬡</div>
@@ -342,9 +342,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
   </div>
 </div>
 
-<!-- ================================================================═══
+<!-- ===================================================================
      ОСНОВНАЯ ОБЛАСТЬ: топбар с вкладками + контент
-     ================================================================═══ -->
+     =================================================================== -->
 <div id="main">
   <div id="topbar">
     <div id="proj-title">Главная страница</div>
@@ -364,9 +364,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
   <div id="content">
 
-    <!-- ═══════════════════════════════════════════════════════════════
+    <!-- ===============================================================
          ВКЛАДКА 0: ГЛАВНАЯ СТРАНИЦА (показывается по умолчанию)
-         ═══════════════════════════════════════════════════════════════ -->
+         =============================================================== -->
     <div class="panel active" id="panel-home">
       <!-- Hero-секция: название и краткое описание -->
       <div class="hero">
@@ -482,9 +482,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
     </div>
     
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ВКЛАДКА 1: ПРОЕКТ — дашборд проекта (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===============================================================
+         ВКЛАДКА 1: ПРОЕКТ - дашборд проекта (ТЗ)
+         =============================================================== -->
     <div class="panel" id="panel-overview">
       <div class="g4" style="margin-bottom:14px">
         <div class="card-sm"><div class="stat-val" id="ov-nm">—</div><div class="stat-label">Моделей</div></div>
@@ -527,7 +527,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
         </div>
       </div>
 
-      <!-- ── Загрузка моделей drag-and-drop ── -->
+      <!-- -- Загрузка моделей drag-and-drop -- -->
       <div class="card" style="margin-top:14px">
         <h3>Загрузка моделей локально</h3>
         <p style="font-size:11px;color:var(--muted2);line-height:1.55;margin-bottom:12px">
@@ -561,9 +561,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ВКЛАДКА 2: КРИТЕРИИ — управление весами критериев (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===============================================================
+         ВКЛАДКА 2: КРИТЕРИИ - управление весами критериев (ТЗ)
+         =============================================================== -->
     <div class="panel" id="panel-criteria">
       <div class="fr" style="margin-bottom:14px;justify-content:space-between">
         <div class="fr">
@@ -575,9 +575,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <div id="crit-body"></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ВКЛАДКА 3: ОЦЕНКИ — матрица оценок (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===============================================================
+         ВКЛАДКА 3: ОЦЕНКИ - матрица оценок (ТЗ)
+         =============================================================== -->
     <div class="panel" id="panel-scores">
       <div class="fr" style="margin-bottom:14px">
         <button class="btn btn-accent" onclick="saveAllScores()">💾 Сохранить</button>
@@ -588,9 +588,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <div class="tw" id="scores-wrap"><div class="empty">Загрузка...</div></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
+    <!-- ===============================================================
          ВКЛАДКА 4: РАСЧЁТ K (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+         =============================================================== -->
     <div class="panel" id="panel-results">
       <div class="fr" style="margin-bottom:14px">
         <button class="btn btn-accent" id="calc-btn" onclick="runCalc()">▶ Запустить расчёт</button>
@@ -601,30 +601,30 @@ tr:hover td{background:rgba(255,255,255,.015)}
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ВКЛАДКА 5: МАТЕМАТИКА — новая вкладка с формулами и расчётами
-         ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===============================================================
+         ВКЛАДКА 5: МАТЕМАТИКА - новая вкладка с формулами и расчётами
+         =============================================================== -->
     <div class="panel" id="panel-math">
       <div id="math-body">
         <div class="empty"><div class="ei">📐</div>Загрузка...</div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ВКЛАДКА 6: МЕТРИКИ — описание критериев оценки
-         ═══════════════════════════════════════════════════════════════ -->
+    <!-- ===============================================================
+         ВКЛАДКА 6: МЕТРИКИ - описание критериев оценки
+         =============================================================== -->
     <div class="panel" id="panel-metrics">
       <div id="metrics-body">
         <div class="empty"><div class="ei">📊</div>Загрузка...</div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
+    <!-- ===============================================================
          ВКЛАДКА 7: ЛОКАЛЬНОЕ ТЕСТИРОВАНИЕ
-         ═══════════════════════════════════════════════════════════════ -->
+         =============================================================== -->
     <div class="panel" id="panel-testing">
 
-      <!-- ── Управление датасетами ── -->
+      <!-- -- Управление датасетами -- -->
       <div class="card" style="margin-bottom:14px">
         <h3>Тестовый датасет</h3>
         <p style="font-size:11px;color:var(--muted2);line-height:1.55;margin-bottom:12px">
@@ -661,7 +661,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
         </div>
       </div>
 
-      <!-- ── Детекция ── -->
+      <!-- -- Детекция -- -->
       <div class="card" style="margin-bottom:14px">
         <h3>Локальный запуск моделей детекции</h3>
         <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:14px">
@@ -679,7 +679,7 @@ tr:hover td{background:rgba(255,255,255,.015)}
         </div>
       </div>
 
-      <!-- ── NLP: тональность ── -->
+      <!-- -- NLP: тональность -- -->
       <div class="card" style="margin-bottom:14px">
         <h3>Локальный запуск NLP-моделей (sentiment analysis)</h3>
         <p style="font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:14px">
@@ -699,13 +699,13 @@ tr:hover td{background:rgba(255,255,255,.015)}
         </div>
       </div>
 
-      <!-- Прогресс — общий для YOLO и NLP -->
+      <!-- Прогресс - общий для YOLO и NLP -->
       <div id="test-progress-wrap" style="display:none"></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
+    <!-- ===============================================================
          ВКЛАДКА 7: АНАЛИТИКА (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+         =============================================================== -->
     <div class="panel" id="panel-analytics">
       <div class="fr no-print" style="margin-bottom:14px">
         <button class="btn btn-ghost" onclick="window.print()">🖨 Печать / PDF</button>
@@ -713,9 +713,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
       <div id="analytics-body"><div class="empty"><div class="ei">📈</div>Аналитика появится после расчёта</div></div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
+    <!-- ===============================================================
          ВКЛАДКА 8: СРАВНЕНИЕ + АНАЛИЗ ЧУВСТВИТЕЛЬНОСТИ (ТЗ)
-         ═══════════════════════════════════════════════════════════════ -->
+         =============================================================== -->
     <div class="panel" id="panel-comparison">
       <div id="comparison-body"><div class="empty"><div class="ei">🔬</div>Сравнение появится после расчёта</div></div>
     </div>
@@ -724,9 +724,9 @@ tr:hover td{background:rgba(255,255,255,.015)}
 </div>
 </div>
 
-<!-- ================================================================═══
+<!-- ===================================================================
      МОДАЛКИ
-     ================================================================═══ -->
+     =================================================================== -->
 <div class="mo" id="mo-new-proj">
   <div class="mc">
     <h3>Новый проект</h3>
@@ -757,11 +757,11 @@ tr:hover td{background:rgba(255,255,255,.015)}
 
 <div id="toast"></div>
 
-<!-- ================================================================═══
-     JAVASCRIPT — вся логика SPA
-     ================================================================═══ -->
+<!-- ===================================================================
+     JAVASCRIPT - вся логика SPA
+     =================================================================== -->
 <script>
-/* ── СОСТОЯНИЕ ПРИЛОЖЕНИЯ ── */
+/* -- СОСТОЯНИЕ ПРИЛОЖЕНИЯ -- */
 const API='';                    // базовый URL API (пусто = относительные пути)
 let pid=null;                    // ID текущего проекта
 let proj=null;                   // объект текущего проекта (с моделями и критериями)
@@ -769,7 +769,7 @@ let charts={};                   // экземпляры Chart.js (для destro
 let testPollInterval=null;       // setInterval для опроса статуса тестирования
 
 /* ================================================================
-   API-ОБЁРТКА — единая функция для всех запросов
+   API-ОБЁРТКА - единая функция для всех запросов
    ================================================================ */
 async function api(m,p,b){
   const o={method:m,headers:{'Content-Type':'application/json'}};
@@ -786,7 +786,7 @@ const POST=(p,b)=>api('POST',p,b);
 const PUT=(p,b)=>api('PUT',p,b);
 const DEL=(p)=>api('DELETE',p);
 
-/* ── Уведомления (тост в правом нижнем углу) ── */
+/* -- Уведомления (тост в правом нижнем углу) -- */
 function toast(msg,t='ok'){
   const e=document.getElementById('toast');
   e.textContent=msg;
@@ -794,7 +794,7 @@ function toast(msg,t='ok'){
   setTimeout(()=>e.className='',2800);
 }
 
-/* ── Утилиты: экранирование HTML и форматирование даты ── */
+/* -- Утилиты: экранирование HTML и форматирование даты -- */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fdt(s){if(!s)return'—';try{return new Date((s.endsWith('Z')?s:s+'Z')).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return s}}
 function kc(k){return k>=.9?'var(--green)':k>=.75?'var(--accent-h)':k>=.6?'var(--amber)':'var(--red)'}
@@ -879,7 +879,7 @@ function renderOverview(p){
   document.getElementById('ov-pcalc').textContent=p.last_calculated?fdt(p.last_calculated):'Ещё не запускался';
   document.getElementById('ov-pstatus').innerHTML=p.report_status==='ready'?'<span class="badge bg">Готов</span>':'<span class="badge ba">Ожидание расчёта</span>';
 
-  // Лидер — берём из последнего расчёта
+  // Лидер - берём из последнего расчёта
   GET(`/api/projects/${p.id}/results`).then(d=>{
     const top=Object.values(d.results).sort((a,b)=>a.rank-b.rank)[0];
     if(top){
@@ -984,9 +984,9 @@ async function createCrit(){
 }
 
 /* ================================================================
-   ВКЛАДКА 3: ОЦЕНКИ — матрица модели × критерии
+   ВКЛАДКА 3: ОЦЕНКИ - матрица модели * критерии
    ================================================================ */
-let pending={};  // изменённые ячейки — копятся пока не нажата кнопка "Сохранить"
+let pending={};  // изменённые ячейки - копятся пока не нажата кнопка "Сохранить"
 
 async function renderScores(){
   pending={};
@@ -1133,11 +1133,11 @@ function gbars(groups,gc){
 }
 
 /* ================================================================
-   ВКЛАДКА 5: МАТЕМАТИКА — формулы + пошаговый расчёт
+   ВКЛАДКА 5: МАТЕМАТИКА - формулы + пошаговый расчёт
    ================================================================ */
 async function renderMath(){
   const el=document.getElementById('math-body');
-  // Постоянная часть — формулы из ТЗ
+  // Постоянная часть - формулы из ТЗ
   let html=`
     <div class="card" style="margin-bottom:14px">
       <h3>Математическая модель оценки</h3>
@@ -1212,7 +1212,7 @@ async function renderMath(){
     </div>
   `;
 
-  // Пошаговый расчёт — только если выбран проект и есть результаты
+  // Пошаговый расчёт - только если выбран проект и есть результаты
   try{
     const d=await GET(`/api/projects/${pid}/results`);
     const results=Object.values(d.results).sort((a,b)=>a.rank-b.rank);
@@ -1227,7 +1227,7 @@ async function renderMath(){
           <span class="rk${m.rank}" style="font-size:14px">№${m.rank}</span>
           <span style="font-size:14px;font-weight:600">${esc(m.model_name)}</span>
         </div>`;
-      // Раскладываем S_k = w1·a1 + w2·a2 + ...
+      // Раскладываем S_k = w1.a1 + w2.a2 + ...
       const allCrit=[];
       Object.values(m.groups).forEach(gd=>gd.criteria.forEach(c=>{if(c.score!==null)allCrit.push(c)}));
       const terms=allCrit.map(c=>`${c.weight}×${c.score.toFixed(1)}`).join(' + ');
@@ -1263,7 +1263,7 @@ async function renderMath(){
 function renderTestingTab(){
   if(!proj)return;
 
-  // ── YOLO-чипы: только detection-модели ──
+  // -- YOLO-чипы: только detection-модели --
   const yoloModels=proj.models.filter(m=>m.model_type==='detection'||m.name.startsWith('YOLO'));
   const yoloEl=document.getElementById('test-models-list');
   yoloEl.innerHTML=yoloModels.length
@@ -1273,7 +1273,7 @@ function renderTestingTab(){
         </div>`).join('')
     : '<div style="color:var(--muted);font-size:11px">В проекте нет моделей детекции. Добавь их на вкладке «Проект».</div>';
 
-  // ── NLP-чипы: только text-модели из NLP_MODEL_REGISTRY ──
+  // -- NLP-чипы: только text-модели из NLP_MODEL_REGISTRY --
   const knownNlp=['rubert-tiny2','rubert-base','roberta-sentiment','distilbert-ru'];
   const nlpModels=proj.models.filter(m=>m.model_type==='text'&&knownNlp.includes(m.name));
   const nlpEl=document.getElementById('test-nlp-models-list');
@@ -1390,7 +1390,7 @@ function renderTestProgress(j){
 }
 
 /* ================================================================
-   ВКЛАДКА 7: АНАЛИТИКА — графики Chart.js
+   ВКЛАДКА 7: АНАЛИТИКА - графики Chart.js
    ================================================================ */
 async function loadAnalytics(){
   let d;
@@ -1414,7 +1414,7 @@ async function loadAnalytics(){
   const pal=['#6c63ff','#2dd4a0','#f5a623','#5ba3f5','#f06060'];
   const labels=results.map(m=>m.model_name);
 
-  // Bar chart — K по моделям
+  // Bar chart - K по моделям
   charts.bar=new Chart(document.getElementById('ch-bar'),{type:'bar',
     data:{labels,datasets:[{label:'K',data:results.map(m=>m.k),
       backgroundColor:results.map((_,i)=>pal[i%pal.length]),borderRadius:6,borderSkipped:false}]},
@@ -1423,7 +1423,7 @@ async function loadAnalytics(){
       scales:{y:{min:0,max:1,ticks:{color:'#5a6280',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e2335'}},
               x:{ticks:{color:'#5a6280',font:{size:11}},grid:{display:false}}}}});
 
-  // Stacked bar — вклад групп
+  // Stacked bar - вклад групп
   const gg=['accuracy','robustness','context'];
   const gc={'accuracy':'#6c63ff','robustness':'#2dd4a0','context':'#f5a623'};
   const gn={'accuracy':'Точность','robustness':'Устойчивость','context':'Контекст'};
@@ -1435,7 +1435,7 @@ async function loadAnalytics(){
       scales:{x:{stacked:true,ticks:{color:'#5a6280'},grid:{display:false}},
               y:{stacked:true,min:0,max:1,ticks:{color:'#5a6280',font:{family:'IBM Plex Mono',size:10}},grid:{color:'#1e2335'}}}}});
 
-  // Radar — профиль модели по трём осям
+  // Radar - профиль модели по трём осям
   charts.radar=new Chart(document.getElementById('ch-radar'),{type:'radar',
     data:{labels:['Точность','Устойчивость','Контекст'],
       datasets:results.map((m,i)=>({label:m.model_name,
@@ -1449,7 +1449,7 @@ async function loadAnalytics(){
         grid:{color:'#1e2335'},angleLines:{color:'#1e2335'},
         pointLabels:{color:'#dde2f0',font:{size:12}}}}}});
 
-  // Финальный отчёт — отдельный запрос
+  // Финальный отчёт - отдельный запрос
   GET(`/api/projects/${pid}/report`).then(rep=>{
     document.getElementById('rep-body').innerHTML=`
       <div class="winner-card">
@@ -1501,7 +1501,7 @@ async function loadComparison(){
       <div id="sens-out"></div>
     </div>`;
 
-  // Сравнительная таблица — подсветка лучшего значения по каждому критерию
+  // Сравнительная таблица - подсветка лучшего значения по каждому критерию
   const ec=crit.filter(c=>c.enabled);
   let h=`<table><thead><tr><th>Критерий</th>`;
   results.forEach(m=>{h+=`<th style="text-align:center">${esc(m.model_name)}</th>`});
@@ -1649,7 +1649,7 @@ async function handleModelUpload(file){
     const data=await r.json();
     toast(`Загружено: ${data.name||data.suggested_name}`);
 
-    // Если выбран проект — автоматически добавляем модель в проект
+    // Если выбран проект - автоматически добавляем модель в проект
     if(pid){
       const name=data.suggested_name||data.name;
       const model_type=_uploadKind==='yolo' ? 'detection' : 'text';
@@ -1658,7 +1658,7 @@ async function handleModelUpload(file){
         toast(`Модель «${name}» добавлена в проект`);
         selectProject(pid);
       }catch(e){
-        // Модель уже могла быть в проекте — это ок
+        // Модель уже могла быть в проекте - это ок
         console.warn('Не удалось добавить в проект:',e);
       }
     }
@@ -1819,10 +1819,10 @@ startTest=()=>_startWithDataset(_origStartTest,'yolo');
 startNlpTest=()=>_startWithDataset(_origStartNlpTest,'nlp');
 
 /* ================================================================
-   ВКЛАДКА МЕТРИКИ — описание каждого критерия с формулами расчёта
+   ВКЛАДКА МЕТРИКИ - описание каждого критерия с формулами расчёта
    ================================================================ */
 const METRICS_DATA=[
-  // ── Группа: Точность (accuracy) ──
+  // -- Группа: Точность (accuracy) --
   {group:'accuracy', name:'Точность ответа', weight:0.30,
    desc:'Насколько модель верно решает основную задачу: для детекции — уверенность '+
         'в обнаруженных объектах, для NLP — доля правильно классифицированных текстов.',
@@ -1855,7 +1855,7 @@ const METRICS_DATA=[
    thresholds:[
      {s:5,c:'все варианты'},{s:4,c:'80%'},{s:3,c:'60%'},{s:2,c:'40%'},{s:1,c:'<40%'}
    ]},
-  // ── Группа: Устойчивость (robustness) ──
+  // -- Группа: Устойчивость (robustness) --
   {group:'robustness', name:'Устойчивость к шуму', weight:0.20,
    desc:'Стабильность работы модели при искажённых входных данных. Для моделей детекции — гауссов '+
         'шум на изображении, для NLP — CAPS, опечатки, сленг.',
@@ -1879,7 +1879,7 @@ const METRICS_DATA=[
    thresholds:[
      {s:5,c:'<50 мс'},{s:4,c:'<150 мс'},{s:3,c:'<400 мс'},{s:2,c:'<800 мс'},{s:1,c:'≥800 мс'}
    ]},
-  // ── Группа: Контекст (context) ──
+  // -- Группа: Контекст (context) --
   {group:'context', name:'Контекстная согласованность', weight:0.15,
    desc:'Сохранение связи с контекстом задачи. Для CV — корректность классов в сцене, '+
         'для NLP — точность классификации в основном корпусе текстов.',
@@ -2030,7 +2030,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   bindDropzone('model-dropzone','model-file-input',handleModelUpload);
   bindDropzone('dataset-dropzone','dataset-file-input',handleDatasetUpload);
 });
-// Если DOMContentLoaded уже отработал (наш скрипт в конце body) — биндим сразу
+// Если DOMContentLoaded уже отработал (наш скрипт в конце body) - биндим сразу
 bindDropzone('model-dropzone','model-file-input',handleModelUpload);
 bindDropzone('dataset-dropzone','dataset-file-input',handleDatasetUpload);
 
